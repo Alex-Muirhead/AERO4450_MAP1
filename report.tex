@@ -4,11 +4,14 @@
 \addbibresource{sample.bib}
 
 \title{
-	\Large {\sc Mech}4470 Hypersonics and Rarefied Gas Dynamics\\
-	\Huge Assignment 1
+	\Large {\sc Mech}4450 Aerospace Propulsion \\
+	\Huge Major Assignment - Part 1
 }
 
-\author{Muirhead, Alex \dots \texttt{s4435062}}
+\author{
+	Muirhead, Alex \dots \texttt{s4435062} \\
+	Watt, Robert \dots
+}
 
 \date{\today}
 
@@ -24,196 +27,6 @@
 \newpage
 \pagenumbering{arabic}
 
-\section*{Question 1}
 
-\subsection*{Part A}
-The coefficients of lift and drag for the projectile can be calculated from the coefficients of pressure for each individual face, which is as follows.
-\begin{equation*}
-	C_{p,i} = \frac{p_i - p_\infty}{q_\infty}
-\end{equation*}
-Under the assumption of ideal gas, the dynamic pressure \(q = {\frac{1}{2}\rho v^2}\) can be expressed as \(q = p\frac{\gamma}{2}M^2\). Then the coefficient of pressure is reduced to:
-\begin{equation*}
-	C_{p,i} = \frac{2}{\gamma M_\infty^2} \left( \frac{p_i}{p_\infty} - 1 \right)
-\end{equation*}
-This simplifies calculations in the problem, as only the static pressure ratios across each subsequent face are required.
-
-\begin{enumerate}[label=\arabic*)]
-	\item There is no predicted shock expansion along face 1. With the assumption of inviscid flow, the pressure on this face is the same as free-stream static pressure.
-	\begin{equation*}
-		M_1 = M_\infty = 6,\
-		\frac{p_1}{p_\infty} = 1
-	\end{equation*}
-	This gives \(C_{p1} = 0\).
-
-	\item The flow passes through a \ang{10} convex turn, and is expanded through Prandtl-Meyer waves. Note that, due to shock expansion being isentropic, the process conserves total pressure and \(p_{t1} = p_{t2}\).
-	\begin{align*}
-		\Delta \omega = \ang{10} &= \nu(M_2) - \nu(M_1) \\
-		\nu(M_2) &= \nu(M_1) + \ang{10} \\
-		&= \ang{84.95} + \ang{10} = \ang{94.95} \\
-		M &\approx 7.85
-	\end{align*}
-	\begin{equation*}
-		\frac{p_2}{p_\infty} = \frac{p_2}{p_{t2}} \left( \frac{p_1}{p_{t1}} \right)^{-1} \frac{p_1}{p_\infty}
-		= \frac{\num{1.158e-4}}{\num{6.334e-4}} \approx 0.1828
-	\end{equation*}
-	This gives \(C_{p2} = -0.032\).
-
-	\item The flow passes through a \ang{10} concave turn, and is compressed through an oblique shockwave. At Mach 7.85, the shockwave angle is \(\theta \approx \ang{16}\) and \(M_{n2} = M_2 \sin{16} \approx 2.16\). From \cite{NASATables}, this gives
-	\begin{gather*}
-		M_{n3} = 0.553 \\
-		M_3 = \frac{M_{n3}}{\sin(\theta - \delta)} \approx 5.10
-	\end{gather*}
-	\begin{align*}
-		\frac{p_3}{p_\infty} &= \frac{p_3}{p_2} \frac{p_2}{p_\infty} = 5.277 \times 0.1828 \approx 0.9648
-	\end{align*}
-	This gives \(C_{p3} = \num{-1.397e-3}\).
-\end{enumerate}
-
-The flow on the lower faces (\(1-4\)) is calculated below, starting from the freestream values. As with before, the total pressure will be propagated through calculations.
-\begin{enumerate}[label=\arabic*), start=4]
-	\item The flow passes through a \(\delta = \ang{20}\) concave turn, and is compressed through an oblique shockwave.
-	At Mach 6, the shockwave angle is \(\theta = \ang{28.5}\) and\(M_{n\infty} = M_{\infty}\sin(28.5) \approx 2.86\). From \cite{NASATables}, this gives
-	\begin{gather*}
-		M_{n4} = 0.484 \\
-		M_4 = \frac{M_{n4}}{\sin(\theta - \delta)} \approx 3.27 \\
-		\frac{p_4}{p_\infty} = 9.376
-	\end{gather*}
-	This gives \(C_{p4} = 0.332\).
-
-	\item The flow passes through a \ang{10} convex turn, and is expanded through Prandtl-Meyer waves.
-	\begin{align*}
-		\Delta \omega = \ang{10} &= \nu(M_5) - \nu(M_4) \\
-		\nu(M_5) &= \nu(M_4) + \ang{10} \\
-		&= \ang{54.703} + \ang{10} = \ang{64.703} \\
-		M_5 &\approx 3.92,\
-	\end{align*}
-	\begin{equation*}
-		\frac{p_5}{p_\infty} = \frac{p_5}{p_{t5}} \left( \frac{p_4}{p_{t4}} \right)^{-1} \frac{p_4}{p_\infty}
-		= \frac{\num{7.332e-3}}{\num{1.826e-2}} \times 9.376
-		\approx 3.7645
-	\end{equation*}
-	This gives \(C_{p5} = 0.110\).
-
-	\item The flow passes through a \(\delta = \ang{10}\) concave turn, and is compressed through an oblique shockwave. At Mach 3.92, the shockwave angle is \(\theta \approx \ang{22.5}\) and \(M_{n5} = M_5 \sin{22.5} \approx 1.5\). From \cite{NASATables}, this gives
-	\begin{gather*}
-		M_{n6} = 0.701 \\
-		M_6 = \frac{M_{n6}}{\sin(\theta - \delta)} \approx 3.24
-	\end{gather*}
-	\begin{equation*}
-		\frac{p_6}{p_\infty} = \frac{p_6}{p_5} \frac{p_5}{p_\infty}
-		= 2.458 \times 3.7645 \approx 9.2531
-	\end{equation*}
-	This gives \(C_{p6} = 0.327\)
-
-\end{enumerate}
-
-The pressure on the rear of the projectile (face 7) is given as the static pressure of the freestream flow, and thus does not contribute any force to the projectile.
-Overall coefficients of lift and drag can be calculated for the projectile from the individual coefficients of pressure as follows.
-\begin{equation*}
-	C_L = \sum_i c_{p,i} \frac{L\vec{n}_{\parallel i}}{c}, \quad
-	C_D = \sum_i c_{p,i} \frac{L\vec{n}_{\perp i}}{c}
-\end{equation*}
-where \(L\) is the length of the face, \(\vec{n}\) the vector orthonormal to the face, and \(c\) the chord length of the projectile. Calculating this gives values of \(C_L \approx 0.227\) and \(C_D \approx 0.0695\).
-
-\subsection*{Part B}
-The free-stream conditions at the geometric altitude of 90,000 ft (approximately \SI{27432}{\metre}) are obtained from interpolating the values from Table~A6 of \cite{white2011fluid}.
-The stagnation (or total) values are also calculated through isentropic relations, based on the projectile speed of Mach 6.
-\begin{alignat*}{2}
-	T_\infty    &= \SI{223.93}{\kelvin} &\quad
-	T_{t\infty} &= \SI{1836.23}{\kelvin} \\
-	p_\infty    &= \SI{1.78}{\kilo\pascal} &\quad
-	p_{t\infty} &= \SI{2810.4}{\kilo\pascal}
-\end{alignat*}
-
-The lift and drag forces on the projectile can be calculated from the coefficients of lift and drag calculated in Part A.
-\begin{equation*}
-	L = \frac{\gamma}{2}p_\infty M_\infty^2 A C_L, \quad
-	D = \frac{\gamma}{2}p_\infty M_\infty^2 A C_D
-\end{equation*}
-As only the cross-section of the projectile is presented, it is assumed this is constant, and thus the lift and drag forces are given per unit metre of span.
-\begin{equation*}
-	\frac{L}{b} = \SI{2.043e3}{\newton\per\metre},
-	\quad
-	\frac{D}{b} = \SI{6.247e2}{\newton\per\metre}
-\end{equation*}
-
-\subsection*{Part C}
-
-Under ideal (inviscid) conditions, each shock-wave and Prandtl-Meyer wave is an adiabatic process, and as such the total temperature does not change across the projectile.
-This leads to the temperature on each face being dependant on only the Mach number (under the assumption of a calorically perfect gas). Face 6 has the lowest Mach number of 3.24 . From \cite{NASATables} the corresponding temperature is \( 0.3226 \times T_t \approx \SI{610.73}{\kelvin}\) .
-
-\subsection*{Part D}
-
-From \cite{NASATables}, there is no solution for an oblique shockwave at Mach 6 past a turn angle of \ang{43}. Considering the half-angle of the projectile leading edge is \ang{10}, an angle of attack exceeding \ang{33} would cause a separated shock.
-
-\pagebreak
-\section*{Question 2}
-
-\subsection*{Part A}
-
-Under the initial assumption that the gas has the properties of dry air, the Mach number of the flow can be calculated as
-\begin{equation}
-	M = \frac{v}{\sqrt{\gamma R T}}
-	= \frac{\SI{6300}{\metre\per\second}}{\SI{664.82}{\metre\per\second}}
-	= 9.48
-\end{equation}
-where \(R = \SI{287}{\joule\per\kilogram\per\kelvin}\) and \(\gamma = 1.4\). From \cite{NASATables}, flow at Mach 9.476 will have a ratio between pitot and static pressure of \(\sfrac{p_{t2}}{p_1} = 116.18\). From the given static pressure of \(\SI{400}{\pascal}\), the expected pitot pressure is \(\SI{46.473}{\kilo\pascal}\).
-
-\subsection*{Part B}
-
-The tables of \cite{NASATables} do not contain tabulated relations for gases other than standard air. However, the Rayleigh pitot formula can be used. The new Mach number for the flow is given as
-\begin{equation*}
-	M = \frac{v}{\sqrt{\gamma R T}}
-	= \frac{\SI{6300}{\metre\per\second}}{\SI{617.52}{\metre\per\second}}
-	= 10.20
-\end{equation*}
-where \(R = \frac{R_u}{MW} = \SI{208.13}{\joule\per\kilogram\per\kelvin}\) and \(\gamma = \frac{5}{3} \approx 1.667\). Substituting these values into the Rayleigh pitot equation gives
-\begin{equation*}
-	\frac{p_{t2}}{p_1}
-	= \left[ \frac{(\gamma+1)M^2}{2} \right]^\frac{\gamma}{\gamma-1}
-	\left[ \frac{\gamma+1}{2\gamma M^2 - (\gamma-1)} \right]^\frac{1}{\gamma-1}
-	\approx 153.32
-\end{equation*}
-Using the given static pressure of \(\SI{400}{\pascal}\), the expected pitot pressure with Argon as the test gas is \(\SI{61.329}{\kilo\pascal}\).
-
-\newpage
-\subsection*{Part C}
-
-For the test gas \(CO_2\), there are no tabulated values within \cite{NASATables}. With the Rayleigh pitot equation having no analytical solution, a newtonian root finding algorithm is used to find the required Mach number.
-
-\begin{minted}[tabsize=4,obeytabs,fontsize=\footnotesize,frame=lines,framesep=0.5em,linenos]{python}
-from math import sqrt
-from scipy.optimize import newton
-
-gamma, R = 1.28, 188.92  # Values for Carbon Dioxide
-T = 2000                 # Freestream temperature [K]
-
-def RayleighPitot(Mach):
-	return (
-		pow( ((gamma+1)*Mach**2) / 2, gamma/(gamma-1) )
-		* pow( (gamma+1) / (2*gamma*Mach**2 - (gamma-1)), 1/(gamma-1) )
-	)
-
-# Solve for pitot to static pressure ratio of 200:1
-# Initial guess of Mach 10
-Mach = newton(lambda M: RayleighPitot(M) - 200/1, 10)
-a    = sqrt(gamma*R*T)
-
-print(f"flow of Mach {Mach:.3f}, and travelling at {a*Mach:.3f}m/s")
-\end{minted}
-This results in a "\texttt{flow of Mach 12.876, and travelling at 8954.152m/s}"
-The ratio of temperatures across the shock is given by
-\begin{equation*}
-	\frac{T_2}{T_1}
-	= \frac{
-		\left[ 2 \gamma M_1^2 - (\gamma-1) \right]
-		\left[ (\gamma-1)M_1^2 + 2 \right]
-	}{(\gamma+1)^2 M_1^2}
-	\approx 23.83
-\end{equation*}
-This gives a temperature immediately behind the normal part of the bow shock of roughly \(23.83\times\SI{2000}{\kelvin} \approx \SI{49084.84}{\kelvin}\).
-At these massive temperature differences, the gas cannot be considered calorically perfect. Under real conditions, both the heat capacities and ratio of specific heats will vary.
-
-\printbibliography
 
 \end{document}
