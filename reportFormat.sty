@@ -1,7 +1,8 @@
 \ProvidesPackage{reportFormat}
 
-%% =====General packages======
-%% --> Referencing
+%% ============================= General packages =============================
+
+% Referencing
 \usepackage[colorinlistoftodos]{todonotes}
 \usepackage[colorlinks=false]{hyperref}
 
@@ -11,31 +12,44 @@
 % \usepackage{geometry}  % [margin=1.2in]
 \usepackage{changepage}
 
-%% --> General commands
+%% ----------------------------- General commands -----------------------------
+
 \newcommand{\defaultwidemargin}{20mm}
 \newcommand{\padding}[1]{\dimexpr #1 - (\paperwidth - \textwidth) / 2 \relax}
-%% ===========================
+
+%% ============================================================================
 
 
 
-%% =====Maths packages=====
-\usepackage{amsmath, amssymb, amsthm, amsfonts}
-\usepackage[per-mode=symbol, separate-uncertainty=true]{siunitx}
-\usepackage{bm} % Use to make maths symbols bold -> e.g. \bm{\alpha}
-\usepackage{xfrac} % Use \sfrac{}{} for slanted fractions
-\usepackage{esint} % Gives nicer integration symbols
+%% ============================== Maths packages ==============================
 
-%% --> Maths commands
+\usepackage{
+    amsmath, amssymb,
+    amsthm, amsfonts
+}
+\usepackage[                           % SI Units
+    per-mode=symbol,                   % e.g. \SI{8314}{\kJ\per\kg\per\K},
+    separate-uncertainty=true          %      \num{1e6}, \ang{45}, etc...
+]{siunitx}
+\usepackage[version=4]{mhchem}         % Chemical equations -> e.g. \ch{H20}
+\usepackage{bm}                        % Bold maths symbols -> e.g. \bm{\alpha}
+\usepackage{xfrac}                     % Use \sfrac{}{} for slanted fractions
+\usepackage{esint}                     % Gives nicer integration symbols
+
+%% ------------------------------ Maths commands ------------------------------
+
 \newcommand{\deriv}[1]{\frac{\mathrm{d}}{\mathrm{d}x} (#1)}
 \newcommand{\pderiv}[2]{\frac{\partial}{\partial #2} #1}
 \newcommand{\intd}[1]{\;\mathrm{d}#1}
 \renewcommand*{\i}{\(i\)}
 \renewcommand*{\vec}[1]{\bm{#1}}
-%% ========================
+
+%% ============================================================================
 
 
 
-%% ======Figure packages======
+%% ============================= Figure packages ==============================
+
 \usepackage{graphicx}
 \graphicspath{ {../../Graphs/} }
 \usepackage{tikz}
@@ -43,16 +57,16 @@
 
 \usepackage{float}
 \usepackage{adjustbox}
-% Custom captions under/above floats in tables or figures
-\usepackage[
-	hang, small, up,
-	figurewithin=section,
-	tablewithin=section
+\usepackage[                           % Custom captions under/above floats
+    hang, small, up,                   % in tables or figures.
+    figurewithin=section,
+    tablewithin=section
 ]{caption}
 \captionsetup{justification=raggedright}
 \usepackage{subcaption}
 
-%% --> Figure commands
+%% ----------------------------- Figure commands ------------------------------
+
 \newenvironment{widefigure}[1][\defaultwidemargin]{
     \begin{figure}[H]
     \begin{adjustwidth}{\padding{#1}}{\padding{#1}}
@@ -60,22 +74,25 @@
     \end{adjustwidth}
     \end{figure}
 }
-%% ==========================
+
+%% ============================================================================
 
 
 
-%% =====Table packages=====
-\usepackage{tabu}
-\usepackage{longtable}
-\usepackage{booktabs} % Horizontal rules in tables
+%% ============================== Table packages ==============================
+
+\usepackage{tabu}                      % Better formatting of columns & widths
+\usepackage{longtable}                 % Tables that go over multiple pages
+\usepackage{booktabs}                  % Horizontal rules in tables
 \usepackage{multirow}
-\usepackage{array} % For customisation of tables
-\usepackage{makecell, rotating}
+\usepackage{array}                     % For customisation of tables
+\usepackage{makecell, rotating}        % Robust table cells -> e.g. \makecell
 
 \global\tabulinesep=1mm
-\renewcommand{\arraystretch}{1} % More spaces between rows
+\renewcommand{\arraystretch}{1}        % More spacing between rows
 
-%% --> Table commands
+%% ------------------------------ Table commands ------------------------------
+
 \newenvironment{widetable}[1][\defaultwidemargin]{
     \begin{table}[H]
     \begin{adjustwidth}{\padding{#1}}{\padding{#1}}
@@ -102,41 +119,52 @@
     <{\egroup}%
 }
 \newcommand*\slant{\multicolumn{1}{U{60}{1em}}}%
-%% =======================
+
+%% ============================================================================
 
 
 
-%% =====List packages=====
-\usepackage{enumitem} % For customisation of lists
+%% ============================== List packages ===============================
 
-%% --> List commands
+\usepackage{enumitem}                  % For customisation of lists
+
+%% ------------------------------ List commands -------------------------------
+
+% Better formatting of lists within table cells.
+% Use \compress at the start of the table.
 \makeatletter
 \newcommand*{\compress}{\@minipagetrue}
 \makeatother
-%% =======================
+
+%% ============================================================================
 
 
 
-%% =====Code packages=====
+
+%% ============================== Code packages ===============================
+
 \usepackage{minted}
 \usemintedstyle{friendly}
 \usepackage{algpseudocode}
 
-%% --> Code commands
+%% ------------------------------ Code commands -------------------------------
+
 \renewcommand\listoflistingscaption{List of source codes}
-%% =======================
+
+%% ============================================================================
 
 
 
-%% ======Bibliography & Referencing packages======
+%% =================== Bibliography & Referencing packages ====================
+
 \usepackage[backend=biber, style=bwl-FU]{biblatex}
 \urlstyle{same}
 \DeclareLanguageMapping{english}{english-apa}
 % \addbibresource{sample.bib}
 \setcounter{biburlucpenalty}{10000}
-%
-% %% --> Extra packages
+
 \usepackage[english]{babel}
 \usepackage{csquotes}
-\usepackage[bottom]{footmisc}  % Gives the \footref command
-%% ===============================================
+\usepackage[bottom]{footmisc}          % Gives the \footref command
+
+%% ============================================================================
