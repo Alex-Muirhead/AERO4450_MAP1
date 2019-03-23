@@ -1,7 +1,6 @@
 \documentclass[a4paper]{article}
 
 \usepackage{reportFormat}
-\addbibresource{sample.bib}
 
 \title{
 	\Large {\sc Mech}4450 Aerospace Propulsion \\
@@ -9,8 +8,9 @@
 }
 
 \author{
-	Muirhead, Alex \dots \texttt{s4435062} \\
-	Watt, Robert \dots \texttt{s4431151}
+	Muirhead, Alex \\ \texttt{s4435062}
+	\and
+	Watt, Robert \\ \texttt{s4431151}
 }
 
 \date{\today}
@@ -27,11 +27,45 @@
 \newpage
 \pagenumbering{arabic}
 
-The rate of formation for each species can be given by the general formula:
+The following finite rate chemistry mechanisms provide an accurate model of fuel combustion within a scramjet engine.
+\begin{gather}
+	\label{eq: C2H4 combustion}
+	\ce{C2H2 + 2O2 -> 2CO + 2H2O} \\
+	\label{eq: CO2 formation}
+	\ce{CO + \frac{1}{2} O2 <-> CO2}
+\end{gather}
 
-\begin{equation}
-	\label{eq:General rate}
-	\deriv{X_i}
-\end{equation}
+The rates of formations for the individual species are given as:
+\begin{subequations}
+	\label{eq: Reaction rates}
+	\begin{alignat}{4}
+		\chemrate{\ce{C2H4}} &=
+		& -k_1 & [\ce{C2H4}]^{0.5} [\ce{O2}]^{0.65}
+		& &
+		& &
+		\\
+		\chemrate{\ce{O2}} &=
+		&\ -2k_1 & [\ce{C2H4}]^{0.5} [\ce{O2}]^{0.65}
+		& -\frac{1}{2}k_{2f} & [\ce{CO}] [\ce{O2}]^{0.5}
+		& +\frac{1}{2}k_{2r} & [\ce{CO2}]
+		\\
+		\chemrate{\ce{CO}} &=
+		& 2k_1 & [\ce{C2H4}]^{0.5} [\ce{O2}]^{0.65}
+		& -k_{2f} & [\ce{CO}] [\ce{O2}]^{0.5}
+		& +k_{2r} & [\ce{CO2}]
+		\\
+		\chemrate{\ce{H2O}} &=
+		& 2k_1 & [\ce{C2H4}]^{0.5} [\ce{O2}]^{0.65}
+		& &
+		& &
+		\\
+		\chemrate{\ce{CO2}} &=
+		& &
+		& k_{2f} & [\ce{CO}] [\ce{O2}]^{0.5}
+		& -k_{2r} & [\ce{CO2}]
+	\end{alignat}
+\end{subequations}
+where \(k_1\) is the rate of reaction for Eq.~\ref{eq: C2H4 combustion}, and \(k_{2f}\) and \(k_{2r}\) are the forward and backward reaction rates for Eq.~\ref{eq: CO2 formation} respectively.
+
 
 \end{document}
