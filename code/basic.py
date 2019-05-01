@@ -127,50 +127,54 @@ def gradient(t, χ, h):
 
     return χGrad, hGrad
 
+def chem_solver():
+    n = 1 + 3*(1 + 3.76)
+    χ0  = np.array(
+        [1/n, 3/n, 0.0, 0.0, 0.0]
+    ) * 70e+03 / (Ru * 1400) * 1e-03
+    sol = integrate.solve_ivp(
+        gradient, (0, ΔT), np.append(χ0, 0.),
+        method="LSODA", events=None,
+        atol=1e-10, rtol=1e-10
+    )
+    return sol
 
-n = 1 + 3*(1 + 3.76)
-χ0  = np.array(
-    [1/n, 3/n, 0.0, 0.0, 0.0]
-) * 70e+03 / (Ru * 1400) * 1e-03
-sol = integrate.solve_ivp(
-    gradient, (0, ΔT), np.append(χ0, 0.),
-    method="LSODA", events=None,
-    atol=1e-10, rtol=1e-10
-)
 
-t, y = sol.t, sol.y
+if __name__ == '__main__':
+    sol = chem_solver()
+    t, y = sol.t, sol.y
 
-fig, ax = plt.subplots()
-formula = ("C$_2$H$_4$", "O$_2$", "CO", "H$_2$O", "CO$_2$")
-[ax.plot(t*1e+06, y[i]*1e+03, label=formula[i]) for i in range(5)]
-ax.legend()
-ax.set_xlim([0, 100])
-plt.xlabel(r"Time [$\mu$s]")
-plt.ylabel("Concentration [mol/m$^3$]")
-plt.title("Concentration over combustion")
-plt.savefig("images/concentration.pdf")
+    fig, ax = plt.subplots()
+    formula = ("C$_2$H$_4$", "O$_2$", "CO", "H$_2$O", "CO$_2$")
+    [ax.plot(t*1e+06, y[i]*1e+03, label=formula[i]) for i in range(5)]
+    ax.legend()
+    ax.set_xlim([0, 100])
+    plt.xlabel(r"Time [$\mu$s]")
+    plt.ylabel("Concentration [mol/m$^3$]")
+    plt.title("Concentration over combustion")
+    #plt.savefig("images/concentration.pdf")
 
-fig, ax = plt.subplots()
-ax.plot(sol.t*1e+06, sol.y[-1]*1e-03, "k-", label="Heat rate")
-ax.legend()
-ax.set_xlim([0, 100])
-ax.set_ylim([0, 0.5])
-plt.xlabel(r"Time [$\mu$s]")
-plt.ylabel("Net heat [MJ/m$^3$]")
-plt.title("Net heat release from combustion")
-plt.savefig("images/netHeat.pdf")
+    fig, ax = plt.subplots()
+    ax.plot(sol.t*1e+06, sol.y[-1]*1e-03, "k-", label="Heat rate")
+    ax.legend()
+    ax.set_xlim([0, 100])
+    ax.set_ylim([0, 0.5])
+    plt.xlabel(r"Time [$\mu$s]")
+    plt.ylabel("Net heat [MJ/m$^3$]")
+    plt.title("Net heat release from combustion")
+    #plt.savefig("images/netHeat.pdf")
 
-fig, ax = plt.subplots()
-ax.plot(
-    sol.t*1e+06,
-    np.gradient(sol.y[-1], sol.t)*1e-06,
-    "k-", label="Heat rate"
-)
-ax.legend()
-ax.set_xlim([0, 100])
-ax.set_ylim([-5, 15])
-plt.xlabel(r"Time [$\mu$s]")
-plt.ylabel("Heat [GW/m$^3$]")
-plt.title("Heat of combustion")
-plt.savefig("images/heatRate.pdf")
-plt.show()
+    fig, ax = plt.subplots()
+    ax.plot(
+        sol.t*1e+06,
+        np.gradient(sol.y[-1], sol.t)*1e-06,
+        "k-", label="Heat rate"
+    )
+    ax.legend()
+    ax.set_xlim([0, 100])
+    ax.set_ylim([-5, 15])
+    plt.xlabel(r"Time [$\mu$s]")
+    plt.ylabel("Heat [GW/m$^3$]")
+    plt.title("Heat of combustion")
+    #plt.savefig("images/heatRate.pdf")
+    plt.show()
