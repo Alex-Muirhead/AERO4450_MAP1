@@ -6,10 +6,10 @@ import pandas as pd
 from scipy import integrate
 from scipy import interpolate
 
-Ru   = 8.314
-pRef = 101.3e3
+Ru   = 8.314  # kJ/kmol.K
+pRef = 100    # kPa
 
-plt.style.use("code/PaperDoubleFig.mplstyle")
+plt.style.use("PaperDoubleFig.mplstyle")
 
 
 def lin(lower, upper, deltaX):
@@ -44,7 +44,7 @@ def vectorInterface(lengths):
 #                1 :: CO + 1/2 O2 <-> CO2
 
 # Stoichiometric coefficients
-μ = np.array([
+ν = np.array([
     [-1.,  0. ],
     [-2., -0.5],
     [ 2., -1. ],
@@ -53,7 +53,7 @@ def vectorInterface(lengths):
 ]).T
 
 # Experimental partial powers
-ν = np.array([
+νExp = np.array([
     [0.5 , 0. ],
     [0.65, 0.5],
     [2.  , 1. ],
@@ -62,19 +62,14 @@ def vectorInterface(lengths):
 ]).T
 
 # Forward and reverse masks
-maskF = np.zeros((2, 5), dtype=bool)
-maskR = np.zeros((2, 5), dtype=bool)
+maskF = np.zeros_like(ν, dtype=bool)
+maskR = np.zeros_like(ν, dtype=bool)
+maskF[ν < 0.] = True
+maskR[ν > 0.] = True
 
-maskF[0, (0, 1)] = True  # {C2H4,  O2}
-maskR[0, (2, 3)] = True  # {  CO, H2O}
-
-maskF[1, (1, 2)] = True  # {  CO, O2}
-maskR[1, (4)]    = True  # { CO2}
-
-MW = np.array([28, 32, 28, 18, 44])
 chemData = []
 for species in ("C2H4", "O2", "CO", "H2O", "CO2"):
-    data = pd.read_csv(f"code/chemData/{species}.txt", sep="\t", skiprows=1)
+    data = pd.read_csv(f"chemData/{species}.txt", sep="\t", skiprows=1)
     chemData.append(data[1:])  # Skip T=0K
 
 logKfuncs, deltaHfuncs = [], []
@@ -87,11 +82,11 @@ for data in chemData:
 
 
 def Kc(T, p):
-    """Kc = Kp * pow(pRef/p, ν+...)"""
+    """Kc = Kp * pow(pRef/Ru*T, νExp+...)"""
     # NOTE: Account for partial pressures
-    Kf_i    = np.array([pow(10, f(T)) for f in logKfuncs]) * (pRef/p)
-    forward = pow(Kf_i, maskF*ν)
-    reverse = pow(Kf_i, maskR*ν)
+    Kf_i    = np.array([pow(10, Kf(T)) for Kf in logKfuncs]) * (pRef/(Ru*T))
+    forward = pow(Kf_i, maskF*νExp)
+    reverse = pow(Kf_i, maskR*νExp)
     return np.prod(reverse, axis=1) / np.prod(forward, axis=1)
 
 
@@ -103,8 +98,8 @@ def arrhenius(T):
 
 
 ΔT   = 0.1e-03
-temp = lin(1400, 2800, ΔT)
-pres = lin(70e+03, 140e+03, ΔT)
+temp = lin(1400, 2800, ΔT)  # K
+pres = lin(70, 140, ΔT)     # kPa
 
 
 @vectorInterface((5, 1))
@@ -112,15 +107,15 @@ def gradient(t, χ, h):
     limit = (χ < 0)
     χ[limit] = 0
 
-    # Would normally calculate T from h = ∫ cp(T) dT
+    # Would normally calculate T from h = \int cp(T) dT
     T , p = temp(t), pres(t)
     kf    = arrhenius(T)
     kr    = kf / Kc(T, p)
     kr[0] = 0  # One way reaction
 
-    forward = kf * np.prod(pow(χ, maskF*ν), axis=1)
-    reverse = kr * np.prod(pow(χ, maskR*ν), axis=1)
-    χGrad   = μ.T @ forward - μ.T @ reverse
+    forward = kf * np.prod(pow(χ, maskF*νExp), axis=1)
+    reverse = kr * np.prod(pow(χ, maskR*νExp), axis=1)
+    χGrad   = ν.T @ forward - ν.T @ reverse
     χGrad[(χGrad < 0)*limit] = 0
 
     hGrad = -sum([dχ_i*h_i(T) for dχ_i, h_i in zip(χGrad, deltaHfuncs)])
@@ -131,7 +126,7 @@ def gradient(t, χ, h):
 n = 1 + 3*(1 + 3.76)
 χ0  = np.array(
     [1/n, 3/n, 0.0, 0.0, 0.0]
-) * 70e+03 / (Ru * 1400) * 1e-03
+) * 70 / (Ru * 1400)
 sol = integrate.solve_ivp(
     gradient, (0, ΔT), np.append(χ0, 0.),
     method="LSODA", events=None,
@@ -139,6 +134,8 @@ sol = integrate.solve_ivp(
 )
 
 t, y = sol.t, sol.y
+print(f"The heat released is {y[-1][-1]*1e-03:.3f} MJ/m^3")
+print(np.array([1/n, 3/n, 0.0, 0.0, 0.0]))
 
 fig, ax = plt.subplots()
 formula = ("C$_2$H$_4$", "O$_2$", "CO", "H$_2$O", "CO$_2$")
@@ -147,18 +144,18 @@ ax.legend()
 ax.set_xlim([0, 100])
 plt.xlabel(r"Time [$\mu$s]")
 plt.ylabel("Concentration [mol/m$^3$]")
-plt.title("Concentration over combustion")
-plt.savefig("images/concentration.pdf")
+plt.title("Concentration of species over combustion")
+plt.savefig("../images/concentration.pdf")
 
 fig, ax = plt.subplots()
-ax.plot(sol.t*1e+06, sol.y[-1]*1e-03, "k-", label="Heat rate")
+ax.plot(sol.t*1e+06, sol.y[-1]*1e-03, "k-", label="Net heat")
 ax.legend()
 ax.set_xlim([0, 100])
 ax.set_ylim([0, 0.5])
 plt.xlabel(r"Time [$\mu$s]")
 plt.ylabel("Net heat [MJ/m$^3$]")
 plt.title("Net heat release from combustion")
-plt.savefig("images/netHeat.pdf")
+plt.savefig("../images/netHeat.pdf")
 
 fig, ax = plt.subplots()
 ax.plot(
@@ -170,7 +167,7 @@ ax.legend()
 ax.set_xlim([0, 100])
 ax.set_ylim([-5, 15])
 plt.xlabel(r"Time [$\mu$s]")
-plt.ylabel("Heat [GW/m$^3$]")
-plt.title("Heat of combustion")
-plt.savefig("images/heatRate.pdf")
+plt.ylabel("Rate of heat [GW/m$^3$]")
+plt.title("Rate of heat of combustion")
+plt.savefig("../images/heatRate.pdf")
 plt.show()

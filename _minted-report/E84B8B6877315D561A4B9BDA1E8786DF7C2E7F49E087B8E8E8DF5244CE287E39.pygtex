@@ -1,0 +1,7 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{def} \PYG{n+nf}{Kc}\PYG{p}{(}\PYG{n}{T}\PYG{p}{,} \PYG{n}{p}\PYG{p}{):}
+	\PYG{n}{Kf\PYGZus{}i}    \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{([}\PYG{n+nb}{pow}\PYG{p}{(}\PYG{l+m+mi}{10}\PYG{p}{,} \PYG{n}{Kf}\PYG{p}{(}\PYG{n}{T}\PYG{p}{))} \PYG{k}{for} \PYG{n}{Kf} \PYG{o+ow}{in} \PYG{n}{logKfuncs}\PYG{p}{])} \PYG{o}{*} \PYG{p}{(}\PYG{n}{pRef}\PYG{o}{/}\PYG{n}{p}\PYG{p}{)}
+	\PYG{n}{forward} \PYG{o}{=} \PYG{n+nb}{pow}\PYG{p}{(}\PYG{n}{Kf\PYGZus{}i}\PYG{p}{,} \PYG{n}{maskF}\PYG{o}{*}\PYG{err}{ν}\PYG{n}{Exp}\PYG{p}{)}
+    \PYG{n}{reverse} \PYG{o}{=} \PYG{n+nb}{pow}\PYG{p}{(}\PYG{n}{Kf\PYGZus{}i}\PYG{p}{,} \PYG{n}{maskR}\PYG{o}{*}\PYG{err}{ν}\PYG{n}{Exp}\PYG{p}{)}
+    \PYG{k}{return} \PYG{n}{np}\PYG{o}{.}\PYG{n}{prod}\PYG{p}{(}\PYG{n}{reverse}\PYG{p}{,} \PYG{n}{axis}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{)} \PYG{o}{/} \PYG{n}{np}\PYG{o}{.}\PYG{n}{prod}\PYG{p}{(}\PYG{n}{forward}\PYG{p}{,} \PYG{n}{axis}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{)}
+\end{Verbatim}

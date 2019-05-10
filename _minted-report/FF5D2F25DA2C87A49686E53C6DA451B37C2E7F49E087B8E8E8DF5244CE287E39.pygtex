@@ -1,0 +1,8 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+	\PYG{o}{...}
+	\PYG{n}{forward} \PYG{o}{=} \PYG{n}{kf} \PYG{o}{*} \PYG{n}{np}\PYG{o}{.}\PYG{n}{prod}\PYG{p}{(}\PYG{n+nb}{pow}\PYG{p}{(}\PYG{err}{χ}\PYG{p}{,} \PYG{n}{maskF}\PYG{o}{*}\PYG{err}{ν}\PYG{n}{Exp}\PYG{p}{),} \PYG{n}{axis}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{)}
+	\PYG{n}{reverse} \PYG{o}{=} \PYG{n}{kr} \PYG{o}{*} \PYG{n}{np}\PYG{o}{.}\PYG{n}{prod}\PYG{p}{(}\PYG{n+nb}{pow}\PYG{p}{(}\PYG{err}{χ}\PYG{p}{,} \PYG{n}{maskR}\PYG{o}{*}\PYG{err}{ν}\PYG{n}{Exp}\PYG{p}{),} \PYG{n}{axis}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{)}
+	\PYG{err}{χ}\PYG{n}{Grad}   \PYG{o}{=} \PYG{err}{ν}\PYG{o}{.}\PYG{n}{T} \PYG{err}{@} \PYG{n}{forward} \PYG{o}{\PYGZhy{}} \PYG{err}{ν}\PYG{o}{.}\PYG{n}{T} \PYG{err}{@} \PYG{n}{reverse}
+	\PYG{o}{...}
+	\PYG{n}{hGrad} \PYG{o}{=} \PYG{o}{\PYGZhy{}}\PYG{n+nb}{sum}\PYG{p}{([}\PYG{n}{dχ\PYGZus{}i}\PYG{o}{*}\PYG{n}{h\PYGZus{}i}\PYG{p}{(}\PYG{n}{T}\PYG{p}{)} \PYG{k}{for} \PYG{n}{dχ\PYGZus{}i}\PYG{p}{,} \PYG{n}{h\PYGZus{}i} \PYG{o+ow}{in} \PYG{n+nb}{zip}\PYG{p}{(}\PYG{err}{χ}\PYG{n}{Grad}\PYG{p}{,} \PYG{n}{deltaHfuncs}\PYG{p}{)])}
+\end{Verbatim}

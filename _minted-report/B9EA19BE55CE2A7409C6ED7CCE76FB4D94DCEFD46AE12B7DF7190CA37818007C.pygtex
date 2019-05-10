@@ -1,0 +1,175 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k+kn}{import} \PYG{n+nn}{math}
+
+\PYG{k+kn}{import} \PYG{n+nn}{matplotlib.pyplot} \PYG{k+kn}{as} \PYG{n+nn}{plt}
+\PYG{k+kn}{import} \PYG{n+nn}{numpy} \PYG{k+kn}{as} \PYG{n+nn}{np}
+\PYG{k+kn}{import} \PYG{n+nn}{pandas} \PYG{k+kn}{as} \PYG{n+nn}{pd}
+\PYG{k+kn}{from} \PYG{n+nn}{scipy} \PYG{k+kn}{import} \PYG{n}{integrate}
+\PYG{k+kn}{from} \PYG{n+nn}{scipy} \PYG{k+kn}{import} \PYG{n}{interpolate}
+
+\PYG{n}{Ru}   \PYG{o}{=} \PYG{l+m+mf}{8.314}  \PYG{c+c1}{\PYGZsh{} kJ/kmol.K}
+\PYG{n}{pRef} \PYG{o}{=} \PYG{l+m+mi}{100}    \PYG{c+c1}{\PYGZsh{} kPa}
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{style}\PYG{o}{.}\PYG{n}{use}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}PaperDoubleFig.mplstyle\PYGZdq{}}\PYG{p}{)}
+
+
+\PYG{k}{def} \PYG{n+nf}{lin}\PYG{p}{(}\PYG{n}{lower}\PYG{p}{,} \PYG{n}{upper}\PYG{p}{,} \PYG{n}{deltaX}\PYG{p}{):}
+    \PYG{n}{deltaY} \PYG{o}{=} \PYG{n}{upper} \PYG{o}{\PYGZhy{}} \PYG{n}{lower}
+    \PYG{n}{grad} \PYG{o}{=} \PYG{n}{deltaY} \PYG{o}{/} \PYG{n}{deltaX}
+
+    \PYG{k}{def} \PYG{n+nf}{inner}\PYG{p}{(}\PYG{n}{x}\PYG{p}{):}
+        \PYG{k}{return} \PYG{n}{lower} \PYG{o}{+} \PYG{n}{grad}\PYG{o}{*}\PYG{n}{x}
+
+    \PYG{k}{return} \PYG{n}{inner}
+
+
+\PYG{k}{def} \PYG{n+nf}{vectorInterface}\PYG{p}{(}\PYG{n}{lengths}\PYG{p}{):}
+    \PYG{n}{L} \PYG{o}{=} \PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{,} \PYG{o}{*}\PYG{n}{np}\PYG{o}{.}\PYG{n}{cumsum}\PYG{p}{(}\PYG{n}{lengths}\PYG{p}{)]}
+
+    \PYG{k}{def} \PYG{n+nf}{wrapper}\PYG{p}{(}\PYG{n}{func}\PYG{p}{):}
+        \PYG{k}{def} \PYG{n+nf}{inner}\PYG{p}{(}\PYG{n}{t}\PYG{p}{,} \PYG{n}{args}\PYG{p}{):}
+            \PYG{n}{splitArgs} \PYG{o}{=} \PYG{p}{[}\PYG{n}{args}\PYG{p}{[}\PYG{n}{l}\PYG{p}{:}\PYG{n}{r}\PYG{p}{]} \PYG{k}{for} \PYG{n}{l}\PYG{p}{,} \PYG{n}{r} \PYG{o+ow}{in} \PYG{n+nb}{zip}\PYG{p}{(}\PYG{n}{L}\PYG{p}{[:}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{1}\PYG{p}{],} \PYG{n}{L}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{:])]}
+            \PYG{n}{output} \PYG{o}{=} \PYG{n}{func}\PYG{p}{(}\PYG{n}{t}\PYG{p}{,} \PYG{o}{*}\PYG{n}{splitArgs}\PYG{p}{)}
+            \PYG{k}{return} \PYG{n}{np}\PYG{o}{.}\PYG{n}{hstack}\PYG{p}{([}\PYG{o}{*}\PYG{n}{output}\PYG{p}{])}
+        \PYG{k}{return} \PYG{n}{inner}
+    \PYG{k}{return} \PYG{n}{wrapper}
+
+
+\PYG{c+c1}{\PYGZsh{}  (row) species 0 :: C2H4}
+\PYG{c+c1}{\PYGZsh{}                1 ::   O2}
+\PYG{c+c1}{\PYGZsh{}                2 ::   CO}
+\PYG{c+c1}{\PYGZsh{}                3 ::  H2O}
+\PYG{c+c1}{\PYGZsh{}                4 ::  CO2}
+
+\PYG{c+c1}{\PYGZsh{} (col) reaction 0 :: C2H4 + 2 O2 \PYGZhy{}\PYGZhy{}\PYGZgt{} 2 CO + 2 H2O}
+\PYG{c+c1}{\PYGZsh{}                1 :: CO + 1/2 O2 \PYGZlt{}\PYGZhy{}\PYGZgt{} CO2}
+
+\PYG{c+c1}{\PYGZsh{} Stoichiometric coefficients}
+\PYG{err}{ν} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{([}
+    \PYG{p}{[}\PYG{o}{\PYGZhy{}}\PYG{l+m+mf}{1.}\PYG{p}{,}  \PYG{l+m+mf}{0.} \PYG{p}{],}
+    \PYG{p}{[}\PYG{o}{\PYGZhy{}}\PYG{l+m+mf}{2.}\PYG{p}{,} \PYG{o}{\PYGZhy{}}\PYG{l+m+mf}{0.5}\PYG{p}{],}
+    \PYG{p}{[} \PYG{l+m+mf}{2.}\PYG{p}{,} \PYG{o}{\PYGZhy{}}\PYG{l+m+mf}{1.} \PYG{p}{],}
+    \PYG{p}{[} \PYG{l+m+mf}{2.}\PYG{p}{,}  \PYG{l+m+mf}{0.} \PYG{p}{],}
+    \PYG{p}{[} \PYG{l+m+mf}{0.}\PYG{p}{,}  \PYG{l+m+mf}{1.} \PYG{p}{]}
+\PYG{p}{])}\PYG{o}{.}\PYG{n}{T}
+
+\PYG{c+c1}{\PYGZsh{} Experimental partial powers}
+\PYG{err}{ν}\PYG{n}{Exp} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{([}
+    \PYG{p}{[}\PYG{l+m+mf}{0.5} \PYG{p}{,} \PYG{l+m+mf}{0.} \PYG{p}{],}
+    \PYG{p}{[}\PYG{l+m+mf}{0.65}\PYG{p}{,} \PYG{l+m+mf}{0.5}\PYG{p}{],}
+    \PYG{p}{[}\PYG{l+m+mf}{2.}  \PYG{p}{,} \PYG{l+m+mf}{1.} \PYG{p}{],}
+    \PYG{p}{[}\PYG{l+m+mf}{2.}  \PYG{p}{,} \PYG{l+m+mf}{0.} \PYG{p}{],}
+    \PYG{p}{[}\PYG{l+m+mf}{0.}  \PYG{p}{,} \PYG{l+m+mf}{1.} \PYG{p}{]}
+\PYG{p}{])}\PYG{o}{.}\PYG{n}{T}
+
+\PYG{c+c1}{\PYGZsh{} Forward and reverse masks}
+\PYG{n}{maskF} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{zeros\PYGZus{}like}\PYG{p}{(}\PYG{err}{ν}\PYG{p}{,} \PYG{n}{dtype}\PYG{o}{=}\PYG{n+nb}{bool}\PYG{p}{)}
+\PYG{n}{maskR} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{zeros\PYGZus{}like}\PYG{p}{(}\PYG{err}{ν}\PYG{p}{,} \PYG{n}{dtype}\PYG{o}{=}\PYG{n+nb}{bool}\PYG{p}{)}
+\PYG{n}{maskF}\PYG{p}{[}\PYG{err}{ν} \PYG{o}{\PYGZlt{}} \PYG{l+m+mf}{0.}\PYG{p}{]} \PYG{o}{=} \PYG{n+nb+bp}{True}
+\PYG{n}{maskR}\PYG{p}{[}\PYG{err}{ν} \PYG{o}{\PYGZgt{}} \PYG{l+m+mf}{0.}\PYG{p}{]} \PYG{o}{=} \PYG{n+nb+bp}{True}
+
+\PYG{n}{chemData} \PYG{o}{=} \PYG{p}{[]}
+\PYG{k}{for} \PYG{n}{species} \PYG{o+ow}{in} \PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}C2H4\PYGZdq{}}\PYG{p}{,} \PYG{l+s+s2}{\PYGZdq{}O2\PYGZdq{}}\PYG{p}{,} \PYG{l+s+s2}{\PYGZdq{}CO\PYGZdq{}}\PYG{p}{,} \PYG{l+s+s2}{\PYGZdq{}H2O\PYGZdq{}}\PYG{p}{,} \PYG{l+s+s2}{\PYGZdq{}CO2\PYGZdq{}}\PYG{p}{):}
+    \PYG{n}{data} \PYG{o}{=} \PYG{n}{pd}\PYG{o}{.}\PYG{n}{read\PYGZus{}csv}\PYG{p}{(}\PYG{n}{f}\PYG{l+s+s2}{\PYGZdq{}chemData/\PYGZob{}species\PYGZcb{}.txt\PYGZdq{}}\PYG{p}{,} \PYG{n}{sep}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+se}{\PYGZbs{}t}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,} \PYG{n}{skiprows}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{)}
+    \PYG{n}{chemData}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{data}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{:])}  \PYG{c+c1}{\PYGZsh{} Skip T=0K}
+
+\PYG{n}{logKfuncs}\PYG{p}{,} \PYG{n}{deltaHfuncs} \PYG{o}{=} \PYG{p}{[],} \PYG{p}{[]}
+\PYG{k}{for} \PYG{n}{data} \PYG{o+ow}{in} \PYG{n}{chemData}\PYG{p}{:}
+    \PYG{n}{T}      \PYG{o}{=} \PYG{n}{data}\PYG{p}{[}\PYG{l+s+s2}{\PYGZdq{}T(K)\PYGZdq{}}\PYG{p}{]}\PYG{o}{.}\PYG{n}{values}\PYG{o}{.}\PYG{n}{astype}\PYG{p}{(}\PYG{n+nb}{float}\PYG{p}{)}
+    \PYG{n}{logKf}  \PYG{o}{=} \PYG{n}{data}\PYG{p}{[}\PYG{l+s+s2}{\PYGZdq{}log Kf\PYGZdq{}}\PYG{p}{]}\PYG{o}{.}\PYG{n}{values}\PYG{o}{.}\PYG{n}{astype}\PYG{p}{(}\PYG{n+nb}{float}\PYG{p}{)}
+    \PYG{n}{deltaH} \PYG{o}{=} \PYG{n}{data}\PYG{p}{[}\PYG{l+s+s2}{\PYGZdq{}delta\PYGZhy{}f H\PYGZdq{}}\PYG{p}{]}\PYG{o}{.}\PYG{n}{values}\PYG{o}{.}\PYG{n}{astype}\PYG{p}{(}\PYG{n+nb}{float}\PYG{p}{)} \PYG{o}{*} \PYG{l+m+mf}{1e+03}  \PYG{c+c1}{\PYGZsh{} kJ/mol\PYGZhy{}\PYGZgt{}kJ/kmol}
+    \PYG{n}{logKfuncs}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{interpolate}\PYG{o}{.}\PYG{n}{interp1d}\PYG{p}{(}\PYG{n}{T}\PYG{p}{,} \PYG{n}{logKf}\PYG{p}{,} \PYG{n}{kind}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}quadratic\PYGZdq{}}\PYG{p}{))}
+    \PYG{n}{deltaHfuncs}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{interpolate}\PYG{o}{.}\PYG{n}{interp1d}\PYG{p}{(}\PYG{n}{T}\PYG{p}{,} \PYG{n}{deltaH}\PYG{p}{,} \PYG{n}{kind}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}quadratic\PYGZdq{}}\PYG{p}{))}
+
+
+\PYG{k}{def} \PYG{n+nf}{Kc}\PYG{p}{(}\PYG{n}{T}\PYG{p}{,} \PYG{n}{p}\PYG{p}{):}
+    \PYG{l+s+sd}{\PYGZdq{}\PYGZdq{}\PYGZdq{}Kc = Kp * pow(pRef/Ru*T, νExp+...)\PYGZdq{}\PYGZdq{}\PYGZdq{}}
+    \PYG{c+c1}{\PYGZsh{} NOTE: Account for partial pressures}
+    \PYG{n}{Kf\PYGZus{}i}    \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{([}\PYG{n+nb}{pow}\PYG{p}{(}\PYG{l+m+mi}{10}\PYG{p}{,} \PYG{n}{Kf}\PYG{p}{(}\PYG{n}{T}\PYG{p}{))} \PYG{k}{for} \PYG{n}{Kf} \PYG{o+ow}{in} \PYG{n}{logKfuncs}\PYG{p}{])} \PYG{o}{*} \PYG{p}{(}\PYG{n}{pRef}\PYG{o}{/}\PYG{p}{(}\PYG{n}{Ru}\PYG{o}{*}\PYG{n}{T}\PYG{p}{))}
+    \PYG{n}{forward} \PYG{o}{=} \PYG{n+nb}{pow}\PYG{p}{(}\PYG{n}{Kf\PYGZus{}i}\PYG{p}{,} \PYG{n}{maskF}\PYG{o}{*}\PYG{err}{ν}\PYG{n}{Exp}\PYG{p}{)}
+    \PYG{n}{reverse} \PYG{o}{=} \PYG{n+nb}{pow}\PYG{p}{(}\PYG{n}{Kf\PYGZus{}i}\PYG{p}{,} \PYG{n}{maskR}\PYG{o}{*}\PYG{err}{ν}\PYG{n}{Exp}\PYG{p}{)}
+    \PYG{k}{return} \PYG{n}{np}\PYG{o}{.}\PYG{n}{prod}\PYG{p}{(}\PYG{n}{reverse}\PYG{p}{,} \PYG{n}{axis}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{)} \PYG{o}{/} \PYG{n}{np}\PYG{o}{.}\PYG{n}{prod}\PYG{p}{(}\PYG{n}{forward}\PYG{p}{,} \PYG{n}{axis}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{)}
+
+
+\PYG{k}{def} \PYG{n+nf}{arrhenius}\PYG{p}{(}\PYG{n}{T}\PYG{p}{):}
+    \PYG{k}{return} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{([}
+        \PYG{l+m+mf}{1.739e+09} \PYG{o}{*} \PYG{n}{math}\PYG{o}{.}\PYG{n}{exp}\PYG{p}{(}\PYG{o}{\PYGZhy{}}\PYG{l+m+mf}{1.485e+05} \PYG{o}{/} \PYG{p}{(}\PYG{n}{Ru}\PYG{o}{*}\PYG{n}{T}\PYG{p}{)),}
+        \PYG{l+m+mf}{6.324e+07} \PYG{o}{*} \PYG{n}{math}\PYG{o}{.}\PYG{n}{exp}\PYG{p}{(}\PYG{o}{\PYGZhy{}}\PYG{l+m+mf}{5.021e+04} \PYG{o}{/} \PYG{p}{(}\PYG{n}{Ru}\PYG{o}{*}\PYG{n}{T}\PYG{p}{))}
+    \PYG{p}{])}
+
+
+\PYG{err}{Δ}\PYG{n}{T}   \PYG{o}{=} \PYG{l+m+mf}{0.1e\PYGZhy{}03}
+\PYG{n}{temp} \PYG{o}{=} \PYG{n}{lin}\PYG{p}{(}\PYG{l+m+mi}{1400}\PYG{p}{,} \PYG{l+m+mi}{2800}\PYG{p}{,} \PYG{err}{Δ}\PYG{n}{T}\PYG{p}{)}  \PYG{c+c1}{\PYGZsh{} K}
+\PYG{n}{pres} \PYG{o}{=} \PYG{n}{lin}\PYG{p}{(}\PYG{l+m+mi}{70}\PYG{p}{,} \PYG{l+m+mi}{140}\PYG{p}{,} \PYG{err}{Δ}\PYG{n}{T}\PYG{p}{)}     \PYG{c+c1}{\PYGZsh{} kPa}
+
+
+\PYG{n+nd}{@vectorInterface}\PYG{p}{((}\PYG{l+m+mi}{5}\PYG{p}{,} \PYG{l+m+mi}{1}\PYG{p}{))}
+\PYG{k}{def} \PYG{n+nf}{gradient}\PYG{p}{(}\PYG{n}{t}\PYG{p}{,} \PYG{err}{χ}\PYG{p}{,} \PYG{n}{h}\PYG{p}{):}
+    \PYG{n}{limit} \PYG{o}{=} \PYG{p}{(}\PYG{err}{χ} \PYG{o}{\PYGZlt{}} \PYG{l+m+mi}{0}\PYG{p}{)}
+    \PYG{err}{χ}\PYG{p}{[}\PYG{n}{limit}\PYG{p}{]} \PYG{o}{=} \PYG{l+m+mi}{0}
+
+    \PYG{c+c1}{\PYGZsh{} Would normally calculate T from h = \PYGZbs{}int cp(T) dT}
+    \PYG{n}{T} \PYG{p}{,} \PYG{n}{p} \PYG{o}{=} \PYG{n}{temp}\PYG{p}{(}\PYG{n}{t}\PYG{p}{),} \PYG{n}{pres}\PYG{p}{(}\PYG{n}{t}\PYG{p}{)}
+    \PYG{n}{kf}    \PYG{o}{=} \PYG{n}{arrhenius}\PYG{p}{(}\PYG{n}{T}\PYG{p}{)}
+    \PYG{n}{kr}    \PYG{o}{=} \PYG{n}{kf} \PYG{o}{/} \PYG{n}{Kc}\PYG{p}{(}\PYG{n}{T}\PYG{p}{,} \PYG{n}{p}\PYG{p}{)}
+    \PYG{n}{kr}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]} \PYG{o}{=} \PYG{l+m+mi}{0}  \PYG{c+c1}{\PYGZsh{} One way reaction}
+
+    \PYG{n}{forward} \PYG{o}{=} \PYG{n}{kf} \PYG{o}{*} \PYG{n}{np}\PYG{o}{.}\PYG{n}{prod}\PYG{p}{(}\PYG{n+nb}{pow}\PYG{p}{(}\PYG{err}{χ}\PYG{p}{,} \PYG{n}{maskF}\PYG{o}{*}\PYG{err}{ν}\PYG{n}{Exp}\PYG{p}{),} \PYG{n}{axis}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{)}
+    \PYG{n}{reverse} \PYG{o}{=} \PYG{n}{kr} \PYG{o}{*} \PYG{n}{np}\PYG{o}{.}\PYG{n}{prod}\PYG{p}{(}\PYG{n+nb}{pow}\PYG{p}{(}\PYG{err}{χ}\PYG{p}{,} \PYG{n}{maskR}\PYG{o}{*}\PYG{err}{ν}\PYG{n}{Exp}\PYG{p}{),} \PYG{n}{axis}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{)}
+    \PYG{err}{χ}\PYG{n}{Grad}   \PYG{o}{=} \PYG{err}{ν}\PYG{o}{.}\PYG{n}{T} \PYG{err}{@} \PYG{n}{forward} \PYG{o}{\PYGZhy{}} \PYG{err}{ν}\PYG{o}{.}\PYG{n}{T} \PYG{err}{@} \PYG{n}{reverse}
+    \PYG{err}{χ}\PYG{n}{Grad}\PYG{p}{[(}\PYG{err}{χ}\PYG{n}{Grad} \PYG{o}{\PYGZlt{}} \PYG{l+m+mi}{0}\PYG{p}{)}\PYG{o}{*}\PYG{n}{limit}\PYG{p}{]} \PYG{o}{=} \PYG{l+m+mi}{0}
+
+    \PYG{n}{hGrad} \PYG{o}{=} \PYG{o}{\PYGZhy{}}\PYG{n+nb}{sum}\PYG{p}{([}\PYG{n}{dχ\PYGZus{}i}\PYG{o}{*}\PYG{n}{h\PYGZus{}i}\PYG{p}{(}\PYG{n}{T}\PYG{p}{)} \PYG{k}{for} \PYG{n}{dχ\PYGZus{}i}\PYG{p}{,} \PYG{n}{h\PYGZus{}i} \PYG{o+ow}{in} \PYG{n+nb}{zip}\PYG{p}{(}\PYG{err}{χ}\PYG{n}{Grad}\PYG{p}{,} \PYG{n}{deltaHfuncs}\PYG{p}{)])}
+
+    \PYG{k}{return} \PYG{err}{χ}\PYG{n}{Grad}\PYG{p}{,} \PYG{n}{hGrad}
+
+
+\PYG{n}{n} \PYG{o}{=} \PYG{l+m+mi}{1} \PYG{o}{+} \PYG{l+m+mi}{3}\PYG{o}{*}\PYG{p}{(}\PYG{l+m+mi}{1} \PYG{o}{+} \PYG{l+m+mf}{3.76}\PYG{p}{)}
+\PYG{err}{χ}\PYG{l+m+mi}{0}  \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}
+    \PYG{p}{[}\PYG{l+m+mi}{1}\PYG{o}{/}\PYG{n}{n}\PYG{p}{,} \PYG{l+m+mi}{3}\PYG{o}{/}\PYG{n}{n}\PYG{p}{,} \PYG{l+m+mf}{0.0}\PYG{p}{,} \PYG{l+m+mf}{0.0}\PYG{p}{,} \PYG{l+m+mf}{0.0}\PYG{p}{]}
+\PYG{p}{)} \PYG{o}{*} \PYG{l+m+mi}{70} \PYG{o}{/} \PYG{p}{(}\PYG{n}{Ru} \PYG{o}{*} \PYG{l+m+mi}{1400}\PYG{p}{)}
+\PYG{n}{sol} \PYG{o}{=} \PYG{n}{integrate}\PYG{o}{.}\PYG{n}{solve\PYGZus{}ivp}\PYG{p}{(}
+    \PYG{n}{gradient}\PYG{p}{,} \PYG{p}{(}\PYG{l+m+mi}{0}\PYG{p}{,} \PYG{err}{Δ}\PYG{n}{T}\PYG{p}{),} \PYG{n}{np}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{err}{χ}\PYG{l+m+mi}{0}\PYG{p}{,} \PYG{l+m+mf}{0.}\PYG{p}{),}
+    \PYG{n}{method}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}LSODA\PYGZdq{}}\PYG{p}{,} \PYG{n}{events}\PYG{o}{=}\PYG{n+nb+bp}{None}\PYG{p}{,}
+    \PYG{n}{atol}\PYG{o}{=}\PYG{l+m+mf}{1e\PYGZhy{}10}\PYG{p}{,} \PYG{n}{rtol}\PYG{o}{=}\PYG{l+m+mf}{1e\PYGZhy{}10}
+\PYG{p}{)}
+
+\PYG{n}{t}\PYG{p}{,} \PYG{n}{y} \PYG{o}{=} \PYG{n}{sol}\PYG{o}{.}\PYG{n}{t}\PYG{p}{,} \PYG{n}{sol}\PYG{o}{.}\PYG{n}{y}
+\PYG{k}{print}\PYG{p}{(}\PYG{n}{f}\PYG{l+s+s2}{\PYGZdq{}The heat released is \PYGZob{}y[\PYGZhy{}1][\PYGZhy{}1]*1e\PYGZhy{}03:.3f\PYGZcb{} MJ/m\PYGZca{}3\PYGZdq{}}\PYG{p}{)}
+\PYG{k}{print}\PYG{p}{(}\PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{([}\PYG{l+m+mi}{1}\PYG{o}{/}\PYG{n}{n}\PYG{p}{,} \PYG{l+m+mi}{3}\PYG{o}{/}\PYG{n}{n}\PYG{p}{,} \PYG{l+m+mf}{0.0}\PYG{p}{,} \PYG{l+m+mf}{0.0}\PYG{p}{,} \PYG{l+m+mf}{0.0}\PYG{p}{]))}
+
+\PYG{n}{fig}\PYG{p}{,} \PYG{n}{ax} \PYG{o}{=} \PYG{n}{plt}\PYG{o}{.}\PYG{n}{subplots}\PYG{p}{()}
+\PYG{n}{formula} \PYG{o}{=} \PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}C\PYGZdl{}\PYGZus{}2\PYGZdl{}H\PYGZdl{}\PYGZus{}4\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{l+s+s2}{\PYGZdq{}O\PYGZdl{}\PYGZus{}2\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{l+s+s2}{\PYGZdq{}CO\PYGZdq{}}\PYG{p}{,} \PYG{l+s+s2}{\PYGZdq{}H\PYGZdl{}\PYGZus{}2\PYGZdl{}O\PYGZdq{}}\PYG{p}{,} \PYG{l+s+s2}{\PYGZdq{}CO\PYGZdl{}\PYGZus{}2\PYGZdl{}\PYGZdq{}}\PYG{p}{)}
+\PYG{p}{[}\PYG{n}{ax}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{t}\PYG{o}{*}\PYG{l+m+mf}{1e+06}\PYG{p}{,} \PYG{n}{y}\PYG{p}{[}\PYG{n}{i}\PYG{p}{]}\PYG{o}{*}\PYG{l+m+mf}{1e+03}\PYG{p}{,} \PYG{n}{label}\PYG{o}{=}\PYG{n}{formula}\PYG{p}{[}\PYG{n}{i}\PYG{p}{])} \PYG{k}{for} \PYG{n}{i} \PYG{o+ow}{in} \PYG{n+nb}{range}\PYG{p}{(}\PYG{l+m+mi}{5}\PYG{p}{)]}
+\PYG{n}{ax}\PYG{o}{.}\PYG{n}{legend}\PYG{p}{()}
+\PYG{n}{ax}\PYG{o}{.}\PYG{n}{set\PYGZus{}xlim}\PYG{p}{([}\PYG{l+m+mi}{0}\PYG{p}{,} \PYG{l+m+mi}{100}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Time [\PYGZdl{}\PYGZbs{}mu\PYGZdl{}s]\PYGZdq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}Concentration [mol/m\PYGZdl{}\PYGZca{}3\PYGZdl{}]\PYGZdq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}Concentration of species over combustion\PYGZdq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}../images/concentration.pdf\PYGZdq{}}\PYG{p}{)}
+
+\PYG{n}{fig}\PYG{p}{,} \PYG{n}{ax} \PYG{o}{=} \PYG{n}{plt}\PYG{o}{.}\PYG{n}{subplots}\PYG{p}{()}
+\PYG{n}{ax}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}\PYG{n}{sol}\PYG{o}{.}\PYG{n}{t}\PYG{o}{*}\PYG{l+m+mf}{1e+06}\PYG{p}{,} \PYG{n}{sol}\PYG{o}{.}\PYG{n}{y}\PYG{p}{[}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{o}{*}\PYG{l+m+mf}{1e\PYGZhy{}03}\PYG{p}{,} \PYG{l+s+s2}{\PYGZdq{}k\PYGZhy{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{label}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}Net heat\PYGZdq{}}\PYG{p}{)}
+\PYG{n}{ax}\PYG{o}{.}\PYG{n}{legend}\PYG{p}{()}
+\PYG{n}{ax}\PYG{o}{.}\PYG{n}{set\PYGZus{}xlim}\PYG{p}{([}\PYG{l+m+mi}{0}\PYG{p}{,} \PYG{l+m+mi}{100}\PYG{p}{])}
+\PYG{n}{ax}\PYG{o}{.}\PYG{n}{set\PYGZus{}ylim}\PYG{p}{([}\PYG{l+m+mi}{0}\PYG{p}{,} \PYG{l+m+mf}{0.5}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Time [\PYGZdl{}\PYGZbs{}mu\PYGZdl{}s]\PYGZdq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}Net heat [MJ/m\PYGZdl{}\PYGZca{}3\PYGZdl{}]\PYGZdq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}Net heat release from combustion\PYGZdq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}../images/netHeat.pdf\PYGZdq{}}\PYG{p}{)}
+
+\PYG{n}{fig}\PYG{p}{,} \PYG{n}{ax} \PYG{o}{=} \PYG{n}{plt}\PYG{o}{.}\PYG{n}{subplots}\PYG{p}{()}
+\PYG{n}{ax}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}
+    \PYG{n}{sol}\PYG{o}{.}\PYG{n}{t}\PYG{o}{*}\PYG{l+m+mf}{1e+06}\PYG{p}{,}
+    \PYG{n}{np}\PYG{o}{.}\PYG{n}{gradient}\PYG{p}{(}\PYG{n}{sol}\PYG{o}{.}\PYG{n}{y}\PYG{p}{[}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{1}\PYG{p}{],} \PYG{n}{sol}\PYG{o}{.}\PYG{n}{t}\PYG{p}{)}\PYG{o}{*}\PYG{l+m+mf}{1e\PYGZhy{}06}\PYG{p}{,}
+    \PYG{l+s+s2}{\PYGZdq{}k\PYGZhy{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{label}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}Heat rate\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{ax}\PYG{o}{.}\PYG{n}{legend}\PYG{p}{()}
+\PYG{n}{ax}\PYG{o}{.}\PYG{n}{set\PYGZus{}xlim}\PYG{p}{([}\PYG{l+m+mi}{0}\PYG{p}{,} \PYG{l+m+mi}{100}\PYG{p}{])}
+\PYG{n}{ax}\PYG{o}{.}\PYG{n}{set\PYGZus{}ylim}\PYG{p}{([}\PYG{o}{\PYGZhy{}}\PYG{l+m+mi}{5}\PYG{p}{,} \PYG{l+m+mi}{15}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Time [\PYGZdl{}\PYGZbs{}mu\PYGZdl{}s]\PYGZdq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}Rate of heat [GW/m\PYGZdl{}\PYGZca{}3\PYGZdl{}]\PYGZdq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}Rate of heat of combustion\PYGZdq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}../images/heatRate.pdf\PYGZdq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{show}\PYG{p}{()}
+\end{Verbatim}

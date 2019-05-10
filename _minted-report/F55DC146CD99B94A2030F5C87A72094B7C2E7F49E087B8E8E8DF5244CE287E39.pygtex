@@ -1,0 +1,6 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{n}{maskF} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{zeros\PYGZus{}like}\PYG{p}{(}\PYG{err}{ν}\PYG{p}{,} \PYG{n}{dtype}\PYG{o}{=}\PYG{n+nb}{bool}\PYG{p}{)}
+\PYG{n}{maskR} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{zeros\PYGZus{}like}\PYG{p}{(}\PYG{err}{ν}\PYG{p}{,} \PYG{n}{dtype}\PYG{o}{=}\PYG{n+nb}{bool}\PYG{p}{)}
+\PYG{n}{maskF}\PYG{p}{[}\PYG{err}{ν} \PYG{o}{\PYGZlt{}} \PYG{l+m+mf}{0.}\PYG{p}{]} \PYG{o}{=} \PYG{n+nb+bp}{True}
+\PYG{n}{maskR}\PYG{p}{[}\PYG{err}{ν} \PYG{o}{\PYGZgt{}} \PYG{l+m+mf}{0.}\PYG{p}{]} \PYG{o}{=} \PYG{n+nb+bp}{True}
+\end{Verbatim}
