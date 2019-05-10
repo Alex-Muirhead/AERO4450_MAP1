@@ -14,9 +14,11 @@ pRef = 101.3e3
 
 yb = 1.3205 # gamma
 Rb = 188.45 # Gas constant [J/kg K]
-p3b = 70.09 # static pressure [kPa]
 M3b = 3.814 # mach number
+p3b = 70.09 # static pressure [kPa]
+pt3b = p3b / (1 - 0.5*(yb - 1)*M3b**2)**(-yb/(yb-1)) #stagnation pressure
 T3b = 1237.63 # temperature [K]
+Tt3b = T3b * (1 + 0.5*(yb - 1) * M3b**2) # stagnation temperature
 mdot = 31.1186 # combined mass flow rate of stoichiometric mixture of ethylene and air [kg/s]
 cpb = Rb / (1 - 1/yb) # specific heat at constant pressure
 rho3b = p3b / (Rb * T3b)
@@ -48,6 +50,7 @@ for data in chemData:
     logKfuncs.append(interpolate.interp1d(T, logKf, kind="quadratic"))
     deltaHfuncs.append(interpolate.interp1d(T, deltaH, kind="quadratic"))
 
+
 def A(x, A3, Length=0.5):
     return A3 * (1 + 3*x/Length)
 
@@ -63,16 +66,16 @@ def arrhenius(T):
 def Y(X):
     return X * MW * (1 - X[5]*MW[5]) / ( np.sum(X[0:5] * MW[0:5]) )
 
-#def vectorInterface(lengths):
-#        L = [0, *np.cumsum(lengths)]
+def vectorInterface(lengths):
+    L = [0, *np.cumsum(lengths)]
 
- #       def wrapper(func):
- #           def inner(t, args):
- #               splitArgs = [args[l:r] for l, r in zip(L[:-1], L[1:])]
- #               output = func(t, *splitArgs)
- #               return np.hstack([*output])
- #           return inner
- #       return wrapper
+    def wrapper(func):
+        def inner(t, args):
+            splitArgs = [args[l:r] for l, r in zip(L[:-1], L[1:])]
+            output = func(t, *splitArgs)
+            return np.hstack([*output])
+        return inner
+    return wrapper
 
 def dXdx(M, Tt, X):
     #  (row) species 0 :: C2H4
@@ -112,24 +115,20 @@ def dXdx(M, Tt, X):
     maskF[1, (1, 2)] = True  # {  CO, O2}
     maskR[1, (4)]    = True  # { CO2}
 
-    
-
-    #@vectorInterface((5, 1))
     def Kc(T, p):
         """Kc = Kp * pow(pRef/p, ν+...)"""
         # NOTE: Account for partial pressures
-        Kf_i    = np.array([pow(10, f(T)) for f in logKfuncs]) * (pRef/p)
+        Kf_i    = np.array([pow(10, f(np.float64(T))) for f in logKfuncs]) * (pRef/p)
         forward = pow(Kf_i, maskF*ν)
         reverse = pow(Kf_i, maskR*ν)
         return np.prod(reverse, axis=1) / np.prod(forward, axis=1)
 
-    #@vectorInterface((5,1))
-    def concentration_gradient(χ):
+    #@vectorInterface((5,1,1))
+    def concentration_gradient(χ, M, T):
         limit = (χ < 0)
         χ[limit] = 0
 
-        T = T = Tt * 1/(1 + 0.5*(yb - 1) * M**2)
-        p = p3b * (1 + 0.5*(yb-1)*M**2)**(-yb/(yb-1))
+        p = pt3b * (1 + 0.5*(yb-1)*M**2)**(-yb/(yb-1))
 
         kf    = arrhenius(T)
         kr    = kf / Kc(T, p)
@@ -138,20 +137,24 @@ def dXdx(M, Tt, X):
         forward = kf * np.prod(pow(χ, maskF*ν), axis=1)
         reverse = kr * np.prod(pow(χ, maskR*ν), axis=1)
         χGrad   = μ.T @ forward - μ.T @ reverse
+
         χGrad[(χGrad < 0)*limit] = 0
 
+        
         #hGrad = -sum([dχ_i*h_i(T) for dχ_i, h_i in zip(χGrad, deltaHfuncs)])
 
-        return np.append(χGrad, 0.0) #hGrad
+        #return np.append(χGrad, 0.0) #hGrad
+        return χGrad
 
     T = Tt * 1/(1 + 0.5*(yb - 1) * M**2)
     v = M * np.sqrt(yb * Rb * T)
-    return concentration_gradient(X) / v
+    return concentration_gradient(X, M, T) / v
 
 def new_Tt(X, M, Tt, gamma = yb):
-    T = Tt[-1] * 1/(1 + 0.5*(gamma - 1) * M[-1]**2)
+    T = Tt * 1/(1 + 0.5*(gamma - 1) * M**2)
     h0fi = [deltaHfuncs[i](T) for i in range(5)]
-    return T3b - (1/cpb) * ( np.sum(Y(X[-1])) * h0fi - np.sum(Y(X3)) * deltaHfuncs(T3b) )
+    h03fi = [deltaHfuncs[i](T3b) for i in range(5)]
+    return T3b - (1/cpb) * ( np.sum(Y(X[-1])) * h0fi - np.sum(Y(X3)) * h03fi )
 
 def dYdx(X):
     reacting_sum = np.sum(X[0:5] * MW[0:5])
@@ -164,16 +167,17 @@ def dM2dx(M, X, x, Tt, gamma = yb):
     Deff = 2 * np.sqrt(A(x, A3) / np.pi)
     return M**2 / (dx) * ((1 + 0.5*(gamma - 1)*M**2) / (1 - M**2)) * (-2 * dAonA(x, A3) + (1 + gamma*M**2) * dTtdx(X)/Tt + gamma*M**2 * 4 * Cf * dx / Deff)
 
-#@vectorInterface((5,1,1))
-def gradient(x, X): #note that X is the solution, X[5] = Tt, X[6] = M^2
-    return [dXdx(np.sqrt(X[6]), X[5], X[0:5]), dTtdx(X[0:5]), dM2dx(X[6], X[0:5], x, X[5])]
+@vectorInterface((5,1,1))
+def gradient(x, X, Tt, M):
+    return [dXdx(M, Tt, X), dTtdx(X), dM2dx(M, X, x, Tt)]
 
 n = 1 + 3*(1 + 3.76)
 X3 = np.array(
-        [1/n, 3/n, 0.0, 0.0, 0.0, 0.0]
+        [1/n, 3/n, 0.0, 0.0, 0.0]
     ) * 70e+03 / (Ru * T3b) * 1e-03
 
-sol = (integrate.solve_ivp(gradient, (0, 0.5), np.append(X3, [T3b, M3b]), method="LSODA", events=None, atol=1e-10, rtol=1e-10))
+init_conds = np.append(X3, [Tt3b, M3b])
+sol = (integrate.solve_ivp(gradient, (0, 0.5), init_conds, method="LSODA", events=None, atol=1e-10, rtol=1e-10))
 
 
 
