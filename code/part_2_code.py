@@ -152,9 +152,8 @@ def dYdx(X, M, Tt, x, T):
     return MW * (1 - YN2) * ( 1/reacting_sum * dXdx(M, Tt, X, T) - X/reacting_sum**2 * np.sum(MW[0:5] * dXdx(M, Tt, X, T)))
 
 def dTtdx(X, M, Tt, x, T):
-    h0fi = [np.float64(deltaHfuncs[i](T)) for i in range(5)]
+    h0fi = [np.float64(1000 * deltaHfuncs[i](T)) for i in range(5)]
     temp_gradient = -1/cpb * np.sum(dYdx(X, M, Tt, x, T) * h0fi)
-
     return temp_gradient
 
 def dM2dx(M, X, x, Tt, T):
@@ -167,8 +166,8 @@ def gradient(x, X, Tt, M2):
     Tt = np.float64(Tt)
     M = np.sqrt(np.float64(M2))
     T = Tt * (1 + 0.5*(yb - 1) * M**2)**(-1)
-    if Tt > 1.15 * Tt3b:
-        print("combustion begins at x = ", x, "m")
+    #if Tt > 1.15 * Tt3b:
+    #print("ignition at x = ", x, "m")
     return [dXdx(M, Tt, X, T), dTtdx(X, M, Tt, x, T), dM2dx(M, X, x, Tt, T)]
 
 n = 1 + 3*(1 + 3.76)
@@ -211,7 +210,6 @@ ax.plot(x, M, label = "M")
 plt.xlabel("x [m]")
 plt.ylabel("$T_t$ [K]")
 ax.legend()
-
 
 plt.show()
 
