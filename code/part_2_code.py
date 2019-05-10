@@ -16,7 +16,6 @@ yb = 1.3205 # gamma
 Rb = 188.45 # Gas constant [J/kg K]
 M3b = 3.814 # mach number
 p3b = 70.09 # static pressure [kPa]
-#pt3b = p3b / (1 + 0.5*(yb - 1)*M3b**2)**(-yb/(yb-1)) #stagnation pressure
 T3b = 1237.63 # temperature [K]
 Tt3b = T3b * (1 + 0.5*(yb - 1) * M3b**2) # stagnation temperature
 mdot = 31.1186 # combined mass flow rate of stoichiometric mixture of ethylene and air [kg/s]
@@ -26,7 +25,7 @@ V3b = M3b * np.sqrt(yb * Rb * T3b)
 A3 = mdot / rho3b*V3b
 combustor_length = 0.5 # m
 
-YN2 = 0.8 #mass fraction of nitrogen
+YN2 = 0.75 #mass fraction of nitrogen
 
 increments = 1000
 dx = combustor_length/increments
@@ -183,22 +182,37 @@ init_conds = np.append(X3, [Tt3b, M3b**2])
 sol = (integrate.solve_ivp(gradient, (0, 0.5), init_conds, method="LSODA", events=None, atol=1e-10, rtol=1e-10))
 
 
-x, y = sol.t, sol.y
+x, X, Tt, M = sol.t, sol.y[0:5], sol.y[5], np.sqrt(sol.y[6])
+T = Tt * (1 + 0.5*(yb - 1) * M**2)**(-1)
 
-
-plt.plot(x, y[-2], label = "Tt")
-plt.xlabel("x [m]")
-plt.ylabel("$T_t$ [K]")
-plt.legend()
-plt.show()
 
 fig, ax = plt.subplots()
 formula = ("C$_2$H$_4$", "O$_2$", "CO", "H$_2$O", "CO$_2$")
-[ax.plot(x, y[i]*1e+03, label=formula[i]) for i in range(5)]
+[ax.plot(x, X[i]*1e+03, label=formula[i]) for i in range(5)]
 ax.legend()
-#ax.set_xlim([0, 100])
-plt.xlabel(r"Time [$\mu$s]")
+plt.xlabel("x [m]")
 plt.ylabel("Concentration [mol/m$^3$]")
 plt.title("Concentration over combustion")
+
+fig, ax = plt.subplots()
+ax.plot(x, Tt, label = "Tt")
+plt.xlabel("x [m]")
+plt.ylabel("$T_t$ [K]")
+ax.legend()
+
+fig, ax = plt.subplots()
+ax.plot(x, T, label = "T")
+plt.xlabel("x [m]")
+plt.ylabel("T [K]")
+ax.legend()
+
+fig, ax = plt.subplots()
+ax.plot(x, M, label = "M")
+plt.xlabel("x [m]")
+plt.ylabel("$T_t$ [K]")
+ax.legend()
+
+
 plt.show()
-#plt.savefig("images/concentration.pdf")
+
+
