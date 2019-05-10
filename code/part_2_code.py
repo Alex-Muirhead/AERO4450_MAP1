@@ -34,10 +34,18 @@ Cf = 0.002 # skin friction coefficient
 
 MW = np.array([28, 32, 28, 18, 44])
 
+def vectorInterface(lengths):
+    L = [0, *np.cumsum(lengths)]
 
+    def wrapper(func):
+        def inner(t, args):
+            splitArgs = [args[l:r] for l, r in zip(L[:-1], L[1:])]
+            output = func(t, *splitArgs)
+            return np.hstack([*output])
+        return inner
+    return wrapper
 
 #read chemical data
-MW = np.array([28, 32, 28, 18, 44])
 chemData = []
 for species in ("C2H4", "O2", "CO", "H2O", "CO2"):
     data = pd.read_csv(f"code/chemData/{species}.txt", sep="\t", skiprows=1)
@@ -51,10 +59,11 @@ for data in chemData:
     logKfuncs.append(interpolate.interp1d(T, logKf, kind="quadratic"))
     deltaHfuncs.append(interpolate.interp1d(T, deltaH, kind="quadratic"))
 
-
+#calculate the area for each point along the combustor
 def A(x, A3, Length=0.5):
     return A3 * (1 + 3*x/Length)
 
+#calculate dA/A for each point along the combustor
 def dAonA(x, A3, Length=0.5):
     return 3 * A3 / (Length * A(x, A3))
 
@@ -64,19 +73,25 @@ def arrhenius(T):
         6.324e+07 * np.exp(-5.021e+04 / (Ru*T))
     ])
 
+#calculate Y
 def Y(X):
-    return X * MW * (1 - YN2) / ( np.sum(X[0:5] * MW[0:5]) )
+    return X * MW * (1 - YN2) / ( np.sum(X * MW) )
 
-def vectorInterface(lengths):
-    L = [0, *np.cumsum(lengths)]
+#calculate dYdx
+def dYdx(X, M, Tt, x, T):
+    reacting_sum = np.sum(X * MW)
+    return MW * (1 - YN2) * ( 1/reacting_sum * dXdx(M, Tt, X, T) - X/reacting_sum**2 * np.sum(MW[0:5] * dXdx(M, Tt, X, T)))
 
-    def wrapper(func):
-        def inner(t, args):
-            splitArgs = [args[l:r] for l, r in zip(L[:-1], L[1:])]
-            output = func(t, *splitArgs)
-            return np.hstack([*output])
-        return inner
-    return wrapper
+#calculate dTtdx
+def dTtdx(X, M, Tt, x, T):
+    h0fi = [np.float64(deltaHfuncs[i](T)) for i in range(5)]
+    temp_gradient = -1/cpb * np.sum(dYdx(X, M, Tt, x, T) * h0fi)
+    return temp_gradient
+
+#calculate dM^2
+def dM2(M, X, x, Tt, T):
+    Deff = 2 * np.sqrt(A(x, A3) / np.pi)
+    return M**2 * ((1 + 0.5*(yb - 1)*M**2) / (1 - M**2)) * (-2 * dAonA(x, A3) + (1 + yb*M**2)*dTtdx(X, M, Tt, x, T)/Tt + yb*M**2 * 4 * Cf / Deff)
 
 def dXdx(M, Tt, X, T):
     #  (row) species 0 :: C2H4
@@ -124,7 +139,7 @@ def dXdx(M, Tt, X, T):
         reverse = pow(Kf_i, maskR*ν)
         return np.prod(reverse, axis=1) / np.prod(forward, axis=1)
 
-    #@vectorInterface((5,1,1))
+    #return the gradient of the concentrations in time
     def concentration_gradient(χ, M, Tt, T):
         limit = (χ < 0)
         χ[limit] = 0
@@ -143,32 +158,18 @@ def dXdx(M, Tt, X, T):
         #hGrad = -sum([dχ_i*h_i(T) for dχ_i, h_i in zip(χGrad, deltaHfuncs)])
         return χGrad
 
-    
+    #convert time derivative of concentrations into spatial derivative using velocity   
     v = M * np.sqrt(yb * Rb * T)
     return concentration_gradient(X, M, Tt, T) / v
 
-def dYdx(X, M, Tt, x, T):
-    reacting_sum = np.sum(X * MW)
-    return MW * (1 - YN2) * ( 1/reacting_sum * dXdx(M, Tt, X, T) - X/reacting_sum**2 * np.sum(MW[0:5] * dXdx(M, Tt, X, T)))
-
-def dTtdx(X, M, Tt, x, T):
-    h0fi = [np.float64(1000 * deltaHfuncs[i](T)) for i in range(5)]
-    temp_gradient = -1/cpb * np.sum(dYdx(X, M, Tt, x, T) * h0fi)
-    return temp_gradient
-
-def dM2dx(M, X, x, Tt, T):
-    Deff = 2 * np.sqrt(A(x, A3) / np.pi)
-    return M**2 * ((1 + 0.5*(yb - 1)*M**2) / (1 - M**2)) * (-2 * dAonA(x, A3) + (1 + yb*M**2) * dTtdx(X, M, Tt, x, T)/Tt + yb*M**2 * 4 * Cf / Deff)
-
+#return the gradient of all variables in a single vector
 @vectorInterface((5,1,1))
 def gradient(x, X, Tt, M2):
     x = np.float64(x)
     Tt = np.float64(Tt)
     M = np.sqrt(np.float64(M2))
     T = Tt * (1 + 0.5*(yb - 1) * M**2)**(-1)
-    #if Tt > 1.15 * Tt3b:
-    #print("ignition at x = ", x, "m")
-    return [dXdx(M, Tt, X, T), dTtdx(X, M, Tt, x, T), dM2dx(M, X, x, Tt, T)]
+    return [dXdx(M, Tt, X, T), dTtdx(X, M, Tt, x, T), dM2(M, X, x, Tt, T)]
 
 n = 1 + 3*(1 + 3.76)
 X3 = np.array(
