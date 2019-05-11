@@ -110,6 +110,7 @@ pres = lin(70e+03, 140e+03, ΔT)
 @vectorInterface((5, 1))
 def gradient(t, χ, h):
     limit = (χ < 0)
+    print(χ)
     χ[limit] = 0
 
     # Would normally calculate T from h = ∫ cp(T) dT
@@ -122,7 +123,6 @@ def gradient(t, χ, h):
     reverse = kr * np.prod(pow(χ, maskR*ν), axis=1)
     χGrad   = μ.T @ forward - μ.T @ reverse
     χGrad[(χGrad < 0)*limit] = 0
-
     hGrad = -sum([dχ_i*h_i(T) for dχ_i, h_i in zip(χGrad, deltaHfuncs)])
 
     return χGrad, hGrad

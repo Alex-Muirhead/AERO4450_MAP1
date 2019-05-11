@@ -12,22 +12,26 @@ import pandas as pd
 Ru   = 8.314
 pRef = 101.3
 
+#combuster gas properties
 yb = 1.3205 # gamma
 Rb = 188.45 # Gas constant [J/kg K]
+cpb = Rb / (1 - 1/yb) / 1000 # J/g specific heat at constant pressure
+
+#combuster inlet properties
 M3b = 3.814 # mach number
 p3b = 70.09 # static pressure [kPa]
-T3b = 1237.63 # temperature [K]
-#T3b = 1300
+#T3b = 1237.63 # temperature [K]
+T3b = 1380
 Tt3b = T3b * (1 + 0.5*(yb - 1) * M3b**2) # stagnation temperature
 mdot = 31.1186 # combined mass flow rate of stoichiometric mixture of ethylene and air [kg/s]
-cpb = Rb / (1 - 1/yb) # specific heat at constant pressure
-rho3b = p3b / (Rb * T3b)
+rho3b = p3b * 1e3 / (Rb * T3b) #kg/m^3
 V3b = M3b * np.sqrt(yb * Rb * T3b)
 A3 = mdot / rho3b*V3b
-combustor_length = 0.5 # m
-
 YN2 = 0.69 #mass fraction of nitrogen
 
+
+
+combustor_length = 0.5 # m
 
 
 Cf = 0.002 # skin friction coefficient
@@ -85,7 +89,7 @@ def dYdx(X, M, Tt, x, T):
 #calculate dTtdx
 def dTtdx(X, M, Tt, x, T):
     h0f = np.array([np.float64(deltaHfuncs[i](T)) for i in range(5)]) #kJ/kmol
-    h0f = 1000*h0f / MW # J/g
+    h0f = h0f / MW # J/g
     temp_gradient = -1/cpb * np.sum(dYdx(X, M, Tt, x, T) * h0f)
     return temp_gradient
 
@@ -180,11 +184,8 @@ X3 = np.array(
 init_conds = np.append(X3, [Tt3b, M3b**2])
 
 
-increments = 1
-dx = combustor_length/increments
-sol = []
-#for x in np.linspace(0, combustor_length, increments): 
-sol = (integrate.solve_ivp(gradient, (0, dx), init_conds, method="LSODA", events=None, atol=1e-10, rtol=1e-10))
+
+sol = (integrate.solve_ivp(gradient, (0, 0.5), init_conds, method="LSODA", events=None, atol=1e-10, rtol=1e-10))
 
 
 x, X, Tt, M = sol.t, sol.y[0:5], sol.y[5], np.sqrt(sol.y[6])
@@ -215,7 +216,7 @@ ax.legend()
 fig, ax = plt.subplots()
 ax.plot(x, M, label = "M")
 plt.xlabel("x [m]")
-plt.ylabel("$M$ [K]")
+plt.ylabel("M")
 ax.legend()
 
 plt.show()
