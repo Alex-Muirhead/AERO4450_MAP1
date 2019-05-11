@@ -17,6 +17,7 @@ Rb = 188.45 # Gas constant [J/kg K]
 M3b = 3.814 # mach number
 p3b = 70.09 # static pressure [kPa]
 T3b = 1237.63 # temperature [K]
+#T3b = 1300
 Tt3b = T3b * (1 + 0.5*(yb - 1) * M3b**2) # stagnation temperature
 mdot = 31.1186 # combined mass flow rate of stoichiometric mixture of ethylene and air [kg/s]
 cpb = Rb / (1 - 1/yb) # specific heat at constant pressure
@@ -25,10 +26,9 @@ V3b = M3b * np.sqrt(yb * Rb * T3b)
 A3 = mdot / rho3b*V3b
 combustor_length = 0.5 # m
 
-YN2 = 0.75 #mass fraction of nitrogen
+YN2 = 0.69 #mass fraction of nitrogen
 
-increments = 1000
-dx = combustor_length/increments
+
 
 Cf = 0.002 # skin friction coefficient
 
@@ -80,12 +80,13 @@ def Y(X):
 #calculate dYdx
 def dYdx(X, M, Tt, x, T):
     reacting_sum = np.sum(X * MW)
-    return MW * (1 - YN2) * ( 1/reacting_sum * dXdx(M, Tt, X, T) - X/reacting_sum**2 * np.sum(MW[0:5] * dXdx(M, Tt, X, T)))
+    return MW * (1 - YN2) * ( 1/reacting_sum * dXdx(M, Tt, X, T) - X/reacting_sum**2 * np.sum(MW * dXdx(M, Tt, X, T)))
 
 #calculate dTtdx
 def dTtdx(X, M, Tt, x, T):
-    h0fi = [np.float64(deltaHfuncs[i](T)) for i in range(5)]
-    temp_gradient = -1/cpb * np.sum(dYdx(X, M, Tt, x, T) * h0fi)
+    h0f = np.array([np.float64(deltaHfuncs[i](T)) for i in range(5)]) #kJ/kmol
+    h0f = 1000*h0f / MW # J/g
+    temp_gradient = -1/cpb * np.sum(dYdx(X, M, Tt, x, T) * h0f)
     return temp_gradient
 
 #calculate dM^2
@@ -178,8 +179,12 @@ X3 = np.array(
 
 init_conds = np.append(X3, [Tt3b, M3b**2])
 
+
+increments = 1
+dx = combustor_length/increments
+sol = []
 #for x in np.linspace(0, combustor_length, increments): 
-sol = (integrate.solve_ivp(gradient, (0, 0.5), init_conds, method="LSODA", events=None, atol=1e-10, rtol=1e-10))
+sol = (integrate.solve_ivp(gradient, (0, dx), init_conds, method="LSODA", events=None, atol=1e-10, rtol=1e-10))
 
 
 x, X, Tt, M = sol.t, sol.y[0:5], sol.y[5], np.sqrt(sol.y[6])
@@ -196,6 +201,7 @@ plt.title("Concentration over combustion")
 
 fig, ax = plt.subplots()
 ax.plot(x, Tt, label = "Tt")
+ax.plot(x, [1.15*Tt3b for i in x], label="ignition temp")
 plt.xlabel("x [m]")
 plt.ylabel("$T_t$ [K]")
 ax.legend()
@@ -209,7 +215,7 @@ ax.legend()
 fig, ax = plt.subplots()
 ax.plot(x, M, label = "M")
 plt.xlabel("x [m]")
-plt.ylabel("$T_t$ [K]")
+plt.ylabel("$M$ [K]")
 ax.legend()
 
 plt.show()
