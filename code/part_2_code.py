@@ -226,10 +226,6 @@ sol = integrate.solve_ivp(
 x, X, Tt, M = sol.t, sol.y[0:5], sol.y[5], np.sqrt(sol.y[6])
 
 
-#Y = np.zeros( len(x), 5 )
-#for i in range(len(x)):
-#    for j in range(5):
-#        Y[i, j] = X[i, j] / np.sum(X[:j]) * (1 - YN2)
 
 
 #calculate the static temperature from stagnation temperature and Mach number
