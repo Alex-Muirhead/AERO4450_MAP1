@@ -163,7 +163,7 @@ def arrhenius(T):
 def Kc(T):
     """Kc = Kp * pow(pRef/p, ν+...)"""
     # NOTE: Account for partial pressures
-    Kf_i = np.array([pow(10, f(np.float64(T))) for f in logKfuncs])*(Ru*T/pRef)
+    Kf_i = np.array([pow(10, f(np.float64(T))) for f in logKfuncs])/(Ru*T/pRef)
     forward = pow(Kf_i, maskF*ν)
     reverse = pow(Kf_i, maskR*ν)
     return np.prod(reverse, axis=1) / np.prod(forward, axis=1)
@@ -218,7 +218,8 @@ def gradient(x, X, Tt, M2):
 def massFraction(X):
     """Convert concentration into mass fraction"""
     Y = X * MW / np.sum(X*MW) * (1 - YN2)
-    #assert np.sum(Y) + YN2 == 1
+    if  0.999 > np.sum(Y) + YN2 or np.sum(Y) + YN2 > 1.001:
+        print("total mass fraction = ", np.sum(Y) + YN2)
     return Y
 
 
