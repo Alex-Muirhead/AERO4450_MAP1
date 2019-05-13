@@ -132,17 +132,13 @@ def dM2(M, X, x, Tt, T):
         + (1 + yb*M**2)*dTtdx(X, M, Tt, x, T)/Tt #total temperature change
         + yb*M**2 * 4 * Cf / Deff #friction
         )
-
-######################## Calculate the spatial derivative of the concentrations ############################
-def dXdx(M, Tt, X, T):
-    #################### Calculate the arrhenius reaction rate #################################
-    def arrhenius(T):
+def arrhenius(T):
         return np.array([
         1.739e+09 * np.exp(-1.485e+05 / (Ru*T)),
         6.324e+07 * np.exp(-5.021e+04 / (Ru*T))
         ])
 
-    def Kc(T):
+def Kc(T):
         """Kc = Kp * pow(pRef/p, ν+...)"""
         # NOTE: Account for partial pressures
         Kf_i    = np.array([pow(10, f(np.float64(T))) for f in logKfuncs]) * (pRef/(Ru*T))**(-1)
@@ -150,24 +146,25 @@ def dXdx(M, Tt, X, T):
         reverse = pow(Kf_i, maskR*ν)
         return np.prod(reverse, axis=1) / np.prod(forward, axis=1)
 
-    #return the gradient of the concentrations in time
-    def concentration_gradient(χ, M, Tt, T):
-        limit = (χ < 0)
-        χ[limit] = 0
+#return the gradient of the concentrations in time
+def concentration_gradient(χ, M, Tt, T):
+    limit = (χ < 0)
+    χ[limit] = 0
 
-        kf    = arrhenius(T)
-        kr    = kf / Kc(T)
-        kr[0] = 0  # One way reaction
+    kf    = arrhenius(T)
+    kr    = kf / Kc(T)
+    kr[0] = 0  # One way reaction
 
-        forward = kf * np.prod(pow(χ, maskF*ν), axis=1)
-        reverse = kr * np.prod(pow(χ, maskR*ν), axis=1)
-        χGrad   = μ.T @ forward - μ.T @ reverse
+    forward = kf * np.prod(pow(χ, maskF*ν), axis=1)
+    reverse = kr * np.prod(pow(χ, maskR*ν), axis=1)
+    χGrad   = μ.T @ forward - μ.T @ reverse
 
-        χGrad[(χGrad < 0)*limit] = 0
+    χGrad[(χGrad < 0)*limit] = 0
  
-        #hGrad = -sum([dχ_i*h_i(T) for dχ_i, h_i in zip(χGrad, deltaHfuncs)])
-        return χGrad
-
+    #hGrad = -sum([dχ_i*h_i(T) for dχ_i, h_i in zip(χGrad, deltaHfuncs)])
+    return χGrad
+######################## Calculate the spatial derivative of the concentrations ############################
+def dXdx(M, Tt, X, T):
     #convert time derivative of concentrations into spatial derivative using velocity   
     v = M * np.sqrt(yb * Rb * T)
     return concentration_gradient(X, M, Tt, T) / v
