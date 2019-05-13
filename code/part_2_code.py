@@ -10,6 +10,9 @@ from scipy import interpolate
 from scipy import integrate
 import pandas as pd
 
+plt.style.use("./PaperDoubleFig.mplstyle")
+
+
 # --------------------------- Universal constants ----------------------------
 
 Ru = 8.314                             # Universal gas constant [J/mol/K]
@@ -51,9 +54,8 @@ YN2 = X_N2 * 28 / (np.sum(X3 * MW) + X_N2 * 28)
 combustor_length = 0.5                 # m
 Cf = 0.002                             # skin friction coefficient
 
+
 # calculate the area for each point along the combustor
-
-
 def A(x, A3, Length=0.5):
     return A3 * (1 + 3*x/Length)
 
@@ -241,14 +243,15 @@ x, X, Tt, M = sol.t, sol.y[0:5], sol.y[5], np.sqrt(sol.y[6])
 T = Tt * (1 + 0.5*(yb - 1) * M**2)**(-1)
 Y = np.array([massFraction(X[:, i]) for i in range(len(x))]).T
 
+loc = "{3b}"
 
 fig, ax = plt.subplots()
 formula = ("C$_2$H$_4$", "O$_2$", "CO", "H$_2$O", "CO$_2$")
 [ax.plot(x, X[i]*1e+03, label=formula[i]) for i in range(5)]
 ax.legend()
 plt.xlabel("distance along combustor [m]")
-plt.ylabel("Concentration [mol/m$^3$]")
-plt.title(f"concentration over combustion at T3b = {T3b} K")
+plt.ylabel("Concentration [kmol/m$^3$]")
+plt.title(f"concentration over combustion at $T_{loc}$ = {T3b} K")
 plt.grid()
 
 fig, ax = plt.subplots()
@@ -257,15 +260,15 @@ formula = ("C$_2$H$_4$", "O$_2$", "CO", "H$_2$O", "CO$_2$")
 ax.legend()
 plt.xlabel("distance along combustor [m]")
 plt.ylabel("Mass fraction")
-plt.title(f"Mass fraction over combustion at T3b = {T3b} K")
+plt.title(f"Mass fraction over combustion at $T_{loc}$ = {T3b} K")
 plt.grid()
 
 fig, ax = plt.subplots()
 ax.plot(x, Tt, label="Tt")
 ax.plot(x, [1.15*Tt3b for i in x], label="ignition temp")
 plt.xlabel("distance along combustor [m]")
-plt.ylabel("$T_t$ [K]")
-plt.title(f"Stagnation temperature over combustion at T3b = {T3b} K")
+plt.ylabel("$T_0$ [K]")
+plt.title(f"Stagnation temperature over combustion at $T_{loc}$ = {T3b} K")
 ax.legend()
 plt.grid()
 
@@ -274,14 +277,14 @@ ax.plot(x, T, label="T")
 plt.xlabel("distance along combustor [m]")
 plt.ylabel("T [K]")
 ax.legend()
-plt.title(f"Static temperature over combustion at T3b = {T3b} K")
+plt.title(f"Static temperature over combustion at $T_{loc}$ = {T3b} K")
 plt.grid()
 
 fig, ax = plt.subplots()
 ax.plot(x, M, label="M")
 plt.xlabel("distance along combustor [m]")
 plt.ylabel("M")
-plt.title(f"Mach number over combustion at T3b$ = {T3b} K")
+plt.title(f"Mach number over combustion at $T_{loc}$ = {T3b} K")
 ax.legend()
 plt.grid()
 
