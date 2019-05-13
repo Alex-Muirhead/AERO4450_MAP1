@@ -160,8 +160,7 @@ def arrhenius(T):
 def Kc(T):
     """Kc = Kp * pow(pRef/p, ν+...)"""
     # NOTE: Account for partial pressures
-    Kf_i = np.array([pow(10, f(np.float64(T)))
-                     for f in logKfuncs]) * (pRef/(Ru*T))**(-1)
+    Kf_i = np.array([pow(10, f(np.float64(T))) for f in logKfuncs])*(Ru*T/pRef)
     forward = pow(Kf_i, maskF*ν)
     reverse = pow(Kf_i, maskR*ν)
     return np.prod(reverse, axis=1) / np.prod(forward, axis=1)
