@@ -10,7 +10,7 @@ from scipy import interpolate
 from scipy import integrate
 import pandas as pd
 
-# ----- Define combuster inlet conditions (in burner gas constant terms) -----
+# --------------------------- Universal constants ----------------------------
 
 Ru = 8.314                             # Universal gas constant [J/mol/K]
 pRef = 101.3                           # reference pressure [kPa]
@@ -27,13 +27,13 @@ M3b  = 3.814                           # mach number
 p3b  = 70.09                           # static pressure [kPa]
 T3b  = 1237.63                         # temperature [K]
 T3b  = 1380
-Tt3b = T3b * (1 + 0.5*(yb-1) * M3b**2)  # stagnation temperature
+Tt3b = T3b * (1 + 0.5*(yb-1) * M3b**2) # stagnation temperature
 # combined mass flow rate of stoichiometric mixture of ethylene and air [kg/s]
 mdot = 31.1186
 rho3b = p3b * 1e3 / (Rb * T3b)         # kg/m^3
 V3b = M3b * np.sqrt(yb * Rb * T3b)     # m/s
 A3 = mdot / (rho3b*V3b)                # m^2
-YN2 = 0.7168                           # mass fraction of nitrogen
+
 
 # calculate initial concentrations
 n = 1 + 3*(1 + 3.76)
@@ -41,6 +41,10 @@ MW = np.array([28, 32, 28, 18, 44])    # kg/kmol
 X3 = np.array(
     [1/n, 3/n, 0.0, 0.0, 0.0]
 ) * p3b / (Ru * T3b)
+
+#calculate mass fraction of N2 at inlet
+X_N2 = (3 * 3.76 / n) * p3b / (Ru * T3b)
+YN2 = X_N2 * 28 / (np.sum(X3 * MW) + X_N2 * 28)
 
 # --------------------------- Combustor properties ---------------------------
 
@@ -117,7 +121,7 @@ maskR[1, (4)] = True  # {CO2}
 
 chemData = []
 for species in ("C2H4", "O2", "CO", "H2O", "CO2"):
-    data = pd.read_csv(f"code/chemData/{species}.txt", sep="\t", skiprows=1)
+    data = pd.read_csv(f"./chemData/{species}.txt", sep="\t", skiprows=1)
     chemData.append(data[1:])  # Skip T=0K
 
 logKfuncs, deltaHfuncs = [], []
@@ -138,10 +142,9 @@ def dTtdx(X, M, Tt, x, T):
     temp_gradient = -1/cpb * np.sum(dYdx(X, M, Tt, x, T) * h0f)
     return temp_gradient
 
-# calculate dM^2
-
 
 def dM2(M, X, x, Tt, T):
+    """Calculate spatial derivative of the square of the mach number"""
     Deff = 2 * np.sqrt(A(x, A3) / np.pi)
     return M**2 * ((1 + 0.5*(yb - 1)*M**2) / (1 - M**2)) * (
         -2 * dAonA(x, A3)  # area change
@@ -214,7 +217,9 @@ def gradient(x, X, Tt, M2):
 
 def massFraction(X):
     """Convert concentration into mass fraction"""
-    return X * MW / (np.sum(X * MW) * (1 - YN2))
+    Y = X * MW / np.sum(X*MW) * (1 - YN2)
+    #assert np.sum(Y) + YN2 == 1
+    return Y
 
 
 # create initial conditions vector
@@ -231,8 +236,9 @@ sol = integrate.solve_ivp(
 x, X, Tt, M = sol.t, sol.y[0:5], sol.y[5], np.sqrt(sol.y[6])
 
 
-# calculate the static temperature from stagnation temperature and Mach number
+# calculate static temperature and mass fraction over combustion
 T = Tt * (1 + 0.5*(yb - 1) * M**2)**(-1)
+Y = np.array([massFraction(X[:, i]) for i in range(len(x))]).T
 
 
 fig, ax = plt.subplots()
@@ -241,25 +247,41 @@ formula = ("C$_2$H$_4$", "O$_2$", "CO", "H$_2$O", "CO$_2$")
 ax.legend()
 plt.xlabel("distance along combustor [m]")
 plt.ylabel("Concentration [mol/m$^3$]")
-plt.title("Concentration over combustion")
+plt.title(f"concentration over combustion at T3b = {T3b} K")
+plt.grid()
+
+fig, ax = plt.subplots()
+formula = ("C$_2$H$_4$", "O$_2$", "CO", "H$_2$O", "CO$_2$")
+[ax.plot(x, Y[i], label=formula[i]) for i in range(5)]
+ax.legend()
+plt.xlabel("distance along combustor [m]")
+plt.ylabel("Mass fraction")
+plt.title(f"Mass fraction over combustion at T3b = {T3b} K")
+plt.grid()
 
 fig, ax = plt.subplots()
 ax.plot(x, Tt, label="Tt")
 ax.plot(x, [1.15*Tt3b for i in x], label="ignition temp")
 plt.xlabel("distance along combustor [m]")
 plt.ylabel("$T_t$ [K]")
+plt.title(f"Stagnation temperature over combustion at T3b = {T3b} K")
 ax.legend()
+plt.grid()
 
 fig, ax = plt.subplots()
 ax.plot(x, T, label="T")
 plt.xlabel("distance along combustor [m]")
 plt.ylabel("T [K]")
 ax.legend()
+plt.title(f"Static temperature over combustion at T3b = {T3b} K")
+plt.grid()
 
 fig, ax = plt.subplots()
 ax.plot(x, M, label="M")
 plt.xlabel("distance along combustor [m]")
 plt.ylabel("M")
+plt.title(f"Mach number over combustion at T3b$ = {T3b} K")
 ax.legend()
+plt.grid()
 
 plt.show()
