@@ -16,21 +16,27 @@ pRef = 101.3 # reference pressure [kPa]
 
 ######################## combuster gas properties ####################################
 yb = 1.3205 # gamma
-Rb = 188.45 # Gas constant [J/kg K]
-cpb = Rb / (1 - 1/yb) / 1000 # J/g specific heat at constant pressure
+Rb = 188.45 # Gas constant [J/kg/K]
+cpb = Rb / (1 - 1/yb) / 1000 # J/g/K specific heat at constant pressure
 
 ########################## combuster inlet properties ################################
 M3b = 3.814 # mach number
 p3b = 70.09 # static pressure [kPa]
 T3b = 1237.63 # temperature [K]
-#T3b = 1380
+T3b = 1380
 Tt3b = T3b * (1 + 0.5*(yb - 1) * M3b**2) # stagnation temperature
 mdot = 31.1186 # combined mass flow rate of stoichiometric mixture of ethylene and air [kg/s]
 rho3b = p3b * 1e3 / (Rb * T3b) #kg/m^3
-V3b = M3b * np.sqrt(yb * Rb * T3b)
-A3 = mdot / rho3b*V3b
-YN2 = 0.69 #mass fraction of nitrogen
+V3b = M3b * np.sqrt(yb * Rb * T3b) # m/s
+A3 = mdot / (rho3b*V3b) # m^2
+YN2 = 0.7168 #mass fraction of nitrogen
 
+#calculate initial concentrations
+n = 1 + 3*(1 + 3.76)
+MW = np.array([28, 32, 28, 18, 44]) # g/mol
+X3 = np.array(
+        [1/n, 3/n, 0.0, 0.0, 0.0]
+    ) * p3b / (Ru * T3b) / MW
 
 ######################## Combustor properties ########################################
 combustor_length = 0.5 # m
@@ -78,7 +84,7 @@ def vectorInterface(lengths):
     [ 0.,  1. ]
 ]).T
 
-    # Experimental partial powers
+# Experimental partial powers
 ν = np.array([
     [0.5 , 0. ],
     [0.65, 0.5],
@@ -98,7 +104,7 @@ maskF[1, (1, 2)] = True  # {CO, O2}
 maskR[1, (4)]    = True  # {CO2}
 
 ############################ Import Chemical Data ############################## 
-MW = np.array([28, 32, 28, 18, 44]) # g/mol
+
 #read chemical data
 chemData = []
 for species in ("C2H4", "O2", "CO", "H2O", "CO2"):
@@ -109,7 +115,7 @@ logKfuncs, deltaHfuncs = [], []
 for data in chemData:
     T      = data["T(K)"].values.astype(float)
     logKf  = data["log Kf"].values.astype(float)
-    deltaH = data["delta-f H"].values.astype(float) * 1e+03  # kJ/mol->kJ/kmol
+    deltaH = data["delta-f H"].values.astype(float) * 1e+03  # kJ/mol->kJ/kmol = J/mol
     logKfuncs.append(interpolate.interp1d(T, logKf, kind="quadratic"))
     deltaHfuncs.append(interpolate.interp1d(T, deltaH, kind="quadratic"))
 
@@ -117,21 +123,20 @@ for data in chemData:
 def dTtdx(X, M, Tt, x, T):
     h0f = np.array([np.float64(deltaHfuncs[i](T)) for i in range(5)]) #kJ/kmol
     h0f = h0f / MW # J/g
-    temp_gradient = -1/cpb * np.sum(dYdx(X, M, Tt, x, T) * h0f)
+    temp_gradient = -1/cpb * np.sum(dYdx(X, M, Tt, x, T) * h0f) 
     return temp_gradient
 
 #calculate dM^2
 def dM2(M, X, x, Tt, T):
     Deff = 2 * np.sqrt(A(x, A3) / np.pi)
     return M**2 * ((1 + 0.5*(yb - 1)*M**2) / (1 - M**2)) * (
-        -2 * dAonA(x, A3) + # area change
-        (1 + yb*M**2)*dTtdx(X, M, Tt, x, T)/Tt + #total temperature change
-        yb*M**2 * 4 * Cf / Deff #friction
+        -2 * dAonA(x, A3) # area change
+        + (1 + yb*M**2)*dTtdx(X, M, Tt, x, T)/Tt #total temperature change
+        + yb*M**2 * 4 * Cf / Deff #friction
         )
 
 ######################## Calculate the spatial derivative of the concentrations ############################
 def dXdx(M, Tt, X, T):
-   
     #################### Calculate the arrhenius reaction rate #################################
     def arrhenius(T):
         return np.array([
@@ -172,9 +177,9 @@ def dXdx(M, Tt, X, T):
 #calculate dYdx
 def dYdx(X, M, Tt, x, T):
     reacting_sum = np.sum(X * MW)
-    return MW * (1 - YN2) * ( 
-        1/reacting_sum * dXdx(M, Tt, X, T) 
-        - X/reacting_sum**2 * np.sum(MW * dXdx(M, Tt, X, T))
+    return MW * (1 - YN2) * (
+        dXdx(M, Tt, X, T)/reacting_sum 
+        - X * np.sum(MW * dXdx(M, Tt, X, T)) / reacting_sum**2
         )
 
 #return the gradient of all variables in a single vector
@@ -184,17 +189,25 @@ def gradient(x, X, Tt, M2):
     Tt = np.float64(Tt)
     M = np.sqrt(np.float64(M2))
     T = Tt * (1 + 0.5*(yb - 1) * M**2)**(-1)
+    #print("Progress: ", x/combustor_length * 100)
     return [dXdx(M, Tt, X, T), dTtdx(X, M, Tt, x, T), dM2(M, X, x, Tt, T)]
 
 
-#calculate initial concentrations
-n = 1 + 3*(1 + 3.76)
-X3 = np.array(
-        [1/n, 3/n, 0.0, 0.0, 0.0]
-    ) * 70e+03 / (Ru * T3b) * 1e-03
+
 
 #create initial conditions vector
 init_conds = np.append(X3, [Tt3b, M3b**2])
+
+
+def detect_ignition(x, y):
+    Tt = np.float64(y[-2])
+    return (Tt - 1.15 * Tt3b)
+
+def detect_burn_out(x, y):
+    return np.float64(y[0])
+
+#detect_ignition.terminal = True
+#detect_burn_out.terminal = True
 
 
 #integrate IV
@@ -203,46 +216,45 @@ sol = integrate.solve_ivp(
     (0, 0.5), 
     init_conds, 
     method="LSODA", 
-    events=None, 
-    atol=1e-10, 
-    rtol=1e-10
+    events=[detect_ignition, detect_burn_out], 
+    atol=1e-9, 
+    rtol=1e-9
     )
-
-
 #extract variables from integrator
 x, X, Tt, M = sol.t, sol.y[0:5], sol.y[5], np.sqrt(sol.y[6])
 
+
+
 #calculate the static temperature from stagnation temperature and Mach number
 T = Tt * (1 + 0.5*(yb - 1) * M**2)**(-1)
-
 
 fig, ax = plt.subplots()
 formula = ("C$_2$H$_4$", "O$_2$", "CO", "H$_2$O", "CO$_2$")
 [ax.plot(x, X[i]*1e+03, label=formula[i]) for i in range(5)]
 ax.legend()
-plt.xlabel("x [m]")
+plt.xlabel("distance along combustor [m]")
 plt.ylabel("Concentration [mol/m$^3$]")
 plt.title("Concentration over combustion")
 
 fig, ax = plt.subplots()
 ax.plot(x, Tt, label = "Tt")
 ax.plot(x, [1.15*Tt3b for i in x], label="ignition temp")
-plt.xlabel("x [m]")
+plt.xlabel("distance along combustor [m]")
 plt.ylabel("$T_t$ [K]")
 ax.legend()
 
 fig, ax = plt.subplots()
 ax.plot(x, T, label = "T")
-plt.xlabel("x [m]")
+plt.xlabel("distance along combustor [m]")
 plt.ylabel("T [K]")
 ax.legend()
 
 fig, ax = plt.subplots()
 ax.plot(x, M, label = "M")
-plt.xlabel("x [m]")
+plt.xlabel("distance along combustor [m]")
 plt.ylabel("M")
 ax.legend()
 
-#plt.show()
+plt.show()
 
 
