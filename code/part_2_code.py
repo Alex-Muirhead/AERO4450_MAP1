@@ -19,7 +19,7 @@ pRef = 101.3                           # reference pressure [kPa]
 
 yb  = 1.3205                           # gamma
 Rb  = 288.45                           # Gas constant [J/kg/K]
-cpb = Rb / (1 - 1/yb) / 1000           # J/g/K specific heat constant pressure
+cpb = Rb * yb/(yb-1) / 1000            # J/g/K specific heat constant pressure
 
 # ------------------------ Combuster inlet properties ------------------------
 
