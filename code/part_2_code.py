@@ -1,3 +1,8 @@
+"Hello Alex"
+"This is amazing!"
+
+"Hello Arlo That's ridiculous"
+
 """
 AERO4450 Major Assignment Part 2
 Authors: Alex Muirhead and Robert Watt
@@ -36,7 +41,7 @@ n = 1 + 3*(1 + 3.76)
 MW = np.array([28, 32, 28, 18, 44]) # g/mol
 X3 = np.array(
         [1/n, 3/n, 0.0, 0.0, 0.0]
-    ) * p3b / (Ru * T3b) #* MW
+    ) * p3b / (Ru * T3b)
 
 ######################## Combustor properties ########################################
 combustor_length = 0.5 # m
@@ -131,20 +136,21 @@ def dM2(M, X, x, Tt, T):
         -2 * dAonA(x, A3) # area change
         + (1 + yb*M**2)*dTtdx(X, M, Tt, x, T)/Tt #total temperature change
         + yb*M**2 * 4 * Cf / Deff #friction
-        )
+    )
+
 def arrhenius(T):
-        return np.array([
+    return np.array([
         1.739e+09 * np.exp(-1.485e+05 / (Ru*T)),
         6.324e+07 * np.exp(-5.021e+04 / (Ru*T))
-        ])
+    ])
 
 def Kc(T):
-        """Kc = Kp * pow(pRef/p, ν+...)"""
-        # NOTE: Account for partial pressures
-        Kf_i    = np.array([pow(10, f(np.float64(T))) for f in logKfuncs]) * (pRef/(Ru*T))**(-1)
-        forward = pow(Kf_i, maskF*ν)
-        reverse = pow(Kf_i, maskR*ν)
-        return np.prod(reverse, axis=1) / np.prod(forward, axis=1)
+    """Kc = Kp * pow(pRef/p, ν+...)"""
+    # NOTE: Account for partial pressures
+    Kf_i = np.array([pow(10, f(np.float64(T))) for f in logKfuncs])*(Ru*T/pRef)
+    forward = pow(Kf_i, maskF*ν)
+    reverse = pow(Kf_i, maskR*ν)
+    return np.prod(reverse, axis=1) / np.prod(forward, axis=1)
 
 #return the gradient of the concentrations in time
 def concentration_gradient(χ, M, Tt, T):
@@ -163,7 +169,10 @@ def concentration_gradient(χ, M, Tt, T):
  
     #hGrad = -sum([dχ_i*h_i(T) for dχ_i, h_i in zip(χGrad, deltaHfuncs)])
     return χGrad
-######################## Calculate the spatial derivative of the concentrations ############################
+
+
+# ---------- Calculate the spatial derivative of the concentrations ----------
+
 def dXdx(M, Tt, X, T):
     #convert time derivative of concentrations into spatial derivative using velocity   
     v = M * np.sqrt(yb * Rb * T)
@@ -216,6 +225,11 @@ sol = integrate.solve_ivp(
 #extract variables from integrator
 x, X, Tt, M = sol.t, sol.y[0:5], sol.y[5], np.sqrt(sol.y[6])
 
+
+#Y = np.zeros( len(x), 5 )
+#for i in range(len(x)):
+#    for j in range(5):
+#        Y[i, j] = X[i, j] / np.sum(X[:j]) * (1 - YN2)
 
 
 #calculate the static temperature from stagnation temperature and Mach number
