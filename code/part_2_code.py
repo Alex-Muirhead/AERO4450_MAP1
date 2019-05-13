@@ -16,7 +16,7 @@ pRef = 101.3 # reference pressure [kPa]
 
 ######################## combuster gas properties ####################################
 yb = 1.3205 # gamma
-Rb = 188.45 # Gas constant [J/kg/K]
+Rb = 288.45 # Gas constant [J/kg/K]
 cpb = Rb / (1 - 1/yb) / 1000 # J/g/K specific heat at constant pressure
 
 ########################## combuster inlet properties ################################
@@ -36,7 +36,7 @@ n = 1 + 3*(1 + 3.76)
 MW = np.array([28, 32, 28, 18, 44]) # g/mol
 X3 = np.array(
         [1/n, 3/n, 0.0, 0.0, 0.0]
-    ) * p3b / (Ru * T3b) / MW
+    ) * p3b / (Ru * T3b) #* MW
 
 ######################## Combustor properties ########################################
 combustor_length = 0.5 # m
@@ -49,8 +49,6 @@ def A(x, A3, Length=0.5):
 #calculate dA/A for each point along the combustor ##################
 def dAonA(x, A3, Length=0.5):
     return 3 * A3 / (Length * A(x, A3))
-
-
 
 ############# Decorator to re-order vector into multiple variables ################
 def vectorInterface(lengths):
@@ -115,7 +113,7 @@ logKfuncs, deltaHfuncs = [], []
 for data in chemData:
     T      = data["T(K)"].values.astype(float)
     logKf  = data["log Kf"].values.astype(float)
-    deltaH = data["delta-f H"].values.astype(float) * 1e+03  # kJ/mol->kJ/kmol = J/mol
+    deltaH = data["delta-f H"].values.astype(float) * 1e+03 # kJ/mol->kJ/kmol = J/mol
     logKfuncs.append(interpolate.interp1d(T, logKf, kind="quadratic"))
     deltaHfuncs.append(interpolate.interp1d(T, deltaH, kind="quadratic"))
 
@@ -147,7 +145,7 @@ def dXdx(M, Tt, X, T):
     def Kc(T):
         """Kc = Kp * pow(pRef/p, ν+...)"""
         # NOTE: Account for partial pressures
-        Kf_i    = np.array([pow(10, f(np.float64(T))) for f in logKfuncs]) * (pRef/(Ru*T))
+        Kf_i    = np.array([pow(10, f(np.float64(T))) for f in logKfuncs]) * (pRef/(Ru*T))**(-1)
         forward = pow(Kf_i, maskF*ν)
         reverse = pow(Kf_i, maskR*ν)
         return np.prod(reverse, axis=1) / np.prod(forward, axis=1)
@@ -190,9 +188,7 @@ def gradient(x, X, Tt, M2):
     M = np.sqrt(np.float64(M2))
     T = Tt * (1 + 0.5*(yb - 1) * M**2)**(-1)
     #print("Progress: ", x/combustor_length * 100)
-    return [dXdx(M, Tt, X, T), dTtdx(X, M, Tt, x, T), dM2(M, X, x, Tt, T)]
-
-
+    return np.array([dXdx(M, Tt, X, T), dTtdx(X, M, Tt, x, T), dM2(M, X, x, Tt, T)])
 
 
 #create initial conditions vector
@@ -216,9 +212,9 @@ sol = integrate.solve_ivp(
     (0, 0.5), 
     init_conds, 
     method="LSODA", 
-    events=[detect_ignition, detect_burn_out], 
-    atol=1e-9, 
-    rtol=1e-9
+    #events=[detect_ignition, detect_burn_out], 
+    atol=1e-10, 
+    rtol=1e-10
     )
 #extract variables from integrator
 x, X, Tt, M = sol.t, sol.y[0:5], sol.y[5], np.sqrt(sol.y[6])
