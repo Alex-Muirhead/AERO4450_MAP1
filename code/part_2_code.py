@@ -191,7 +191,6 @@ def concentration_gradient(χ, M, Tt, T):
 
 
 # ---------- Calculate the spatial derivative of the concentrations ----------
-
 def dXdx(M, Tt, X, T):
     """Rate of change of concentration w.r.t space."""
     v = M * np.sqrt(yb * Rb * T)
@@ -265,7 +264,7 @@ plt.grid()
 
 fig, ax = plt.subplots()
 ax.plot(x, Tt, label="Tt")
-ax.plot(x, [1.15*Tt3b for i in x], label="ignition temp")
+ax.plot(x, [1.15*Tt3b for i in x], label="Ignition temperature")
 plt.xlabel("distance along combustor [m]")
 plt.ylabel("$T_0$ [K]")
 plt.title(f"Stagnation temperature over combustion at $T_{loc}$ = {T3b} K")
