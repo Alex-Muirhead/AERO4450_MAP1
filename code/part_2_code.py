@@ -29,7 +29,7 @@ cpb = Rb * yb/(yb-1) / 1000            # J/g/K specific heat constant pressure
 M3b  = 3.814                           # mach number
 p3b  = 70.09                           # static pressure [kPa]
 T3b  = 1237.63                         # temperature [K]
-T3b  = 1380
+T3b  = 1000
 Tt3b = T3b * (1 + 0.5*(yb-1) * M3b**2) # stagnation temperature
 # combined mass flow rate of stoichiometric mixture of ethylene and air [kg/s]
 mdot = 31.1186
