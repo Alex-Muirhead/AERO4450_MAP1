@@ -38,6 +38,8 @@ V3b = M3b * np.sqrt(yb * Rb * T3b)     # m/s
 A3 = mdot / (rho3b*V3b)                # m^2
 
 
+# --------------------- COmbustor Calculations ---------------------------
+
 # calculate initial concentrations
 n = 1 + 3*(1 + 3.76)
 MW = np.array([28, 32, 28, 18, 44])    # kg/kmol
@@ -153,7 +155,7 @@ def dM2(M, X, x, Tt, T):
         -2 * dAonA(x, A3)  # area change
         + (1 + yb*M**2)*dTtdx(X, M, Tt, x, T)/Tt  # total temperature change
         + yb*M**2 * 4 * Cf / Deff  # friction
-    )
+        )
 
 
 def arrhenius(T):
@@ -225,6 +227,7 @@ def massFraction(X):
     return Y
 
 
+
 # create initial conditions vector
 init_conds = np.append(X3, [Tt3b, M3b**2])
 
@@ -237,8 +240,6 @@ sol = integrate.solve_ivp(
 )
 # extract variables from integrator
 x, X, Tt, M = sol.t, sol.y[0:5], sol.y[5], np.sqrt(sol.y[6])
-
-
 
 # calculate static temperature and mass fraction over combustion
 T = Tt * (1 + 0.5*(yb - 1) * M**2)**(-1)
@@ -262,14 +263,51 @@ T4 = T[-1]
 Y4 = Y[:, -1]
 P4 = pressure[-1]
 
+
+
+# ----------------------------------------------- nozzle solver --------------------------------------------
+def AonAstar(M):
+    power = (yb + 1) / (2*(yb-1))
+    a = (yb + 1)/2
+    b = 1 + 0.5*(yb - 1) * M**2 
+    return a**(-power) * b**power / M
+
+
+# Note there is an error in calculating something here
+v0 = 10 * np.sqrt(1.4 * 288 * 220)
+Pt4 = P4 / (1 + 0.5*(yb-1)*M4**2)**(-yb/(yb-1))
+A4 = 4*A3
+Pt10 = Pt4
+P0 = 24533
+P10 = 3 * P0
+M10 = np.sqrt(2 / (yb - 1)*((P10/Pt10)**(-(yb-1)/yb) - 1))
+A10onA4 = AonAstar(M10) / AonAstar(M4)
+A10 = A4 * A10onA4
+T10 = Tt4 * (1 + 0.5*(yb - 1) * M10**2)**(-1)
+v10 = M10 * np.sqrt(yb * Rb * T10)
+
+thrust = mdot * (v10 - v0) + (P10 - P0) * A10
+
+
+# ------------------------------------------ Display results ------------------------------------------------
 #print combustor exit conditions
 print("------------------------------ Combustor Exit Conditions -----------------------------------------")
 print("                              M4 = ", np.round(M4,2))
 print("                              T4 = ", np.round(T4, 2), " K")
 print("                              P4 = ", np.round(P4/1000, 2), " kPa")
 print("                             Tt4 = ", np.round(Tt4,2), " K")
+print("                              Pt4 = ", np.round(Pt4/1000, 2), " kPa")
 print("[C2H4], [O2], [CO], [H2O], [CO2] = ", np.round(X4,7), " kmol/m^3")
 print("Y_C2H4, Y_O2, Y_CO, Y_H2O, Y_CO2 = ", np.round(Y4,7))
+
+
+# print nozzle exit conditions
+print("\n------------------------------ Nozzle exit conditions --------------------------------------------")
+print("A10 / A4 = ", np.round(A10onA4,2))
+print("     A10 = ", np.round(A10, 2), " m^2")
+print("     M10 = ", np.round(M10, 2))
+print("     T10 = ", T10, " K")
+print("  thrust = ", thrust, " N")
 
 
 loc = "{3b}"
@@ -324,4 +362,4 @@ plt.title(f"Pressure over combustion at $T_{loc}$ = {T3b} K")
 ax.legend()
 plt.grid()
 
-plt.show()
+#plt.show()
