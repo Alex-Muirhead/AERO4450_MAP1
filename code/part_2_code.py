@@ -29,7 +29,7 @@ cpb = Rb * yb/(yb-1) / 1000            # J/g/K specific heat constant pressure
 M3b  = 3.814                           # mach number
 p3b  = 70.09                           # static pressure [kPa]
 T3b  = 1237.63                         # temperature [K]
-T3b  = 1000
+T3b  = 1380
 Tt3b = T3b * (1 + 0.5*(yb-1) * M3b**2) # stagnation temperature
 # combined mass flow rate of stoichiometric mixture of ethylene and air [kg/s]
 mdot = 31.1186
@@ -57,6 +57,7 @@ Cf = 0.002                             # skin friction coefficient
 
 # calculate the area for each point along the combustor
 def A(x, A3, Length=0.5):
+    """calculate cross sectional area of combustor"""
     return A3 * (1 + 3*x/Length)
 
 
@@ -238,12 +239,40 @@ sol = integrate.solve_ivp(
 x, X, Tt, M = sol.t, sol.y[0:5], sol.y[5], np.sqrt(sol.y[6])
 
 
+
 # calculate static temperature and mass fraction over combustion
 T = Tt * (1 + 0.5*(yb - 1) * M**2)**(-1)
 Y = np.array([massFraction(X[:, i]) for i in range(len(x))]).T
 
-loc = "{3b}"
+#calculate velocity as function of position
+vel = M * np.sqrt(yb * Rb * T)
 
+#calculate density as function of position
+density = mdot / (vel * A(x, A3))
+
+#calculate pressure as function of position P = rho*R*T
+pressure = density * Rb * T
+
+
+#calculate combustor exit conditions:
+X4 = X[:, -1]
+Tt4 = Tt[-1]
+M4 = M[-1]
+T4 = T[-1]
+Y4 = Y[:, -1]
+P4 = pressure[-1]
+
+#print combustor exit conditions
+print("------------------------------ Combustor Exit Conditions -----------------------------------------")
+print("                              M4 = ", np.round(M4,2))
+print("                              T4 = ", np.round(T4, 2), " K")
+print("                              P4 = ", np.round(P4/1000, 2), " kPa")
+print("                             Tt4 = ", np.round(Tt4,2), " K")
+print("[C2H4], [O2], [CO], [H2O], [CO2] = ", np.round(X4,5), " kmol/m^3")
+print("Y_C2H4, Y_O2, Y_CO, Y_H2O, Y_CO2 = ", np.round(Y4,5))
+
+
+loc = "{3b}"
 fig, ax = plt.subplots()
 formula = ("C$_2$H$_4$", "O$_2$", "CO", "H$_2$O", "CO$_2$")
 [ax.plot(x, X[i]*1e+03, label=formula[i]) for i in range(5)]
@@ -284,6 +313,14 @@ ax.plot(x, M, label="M")
 plt.xlabel("distance along combustor [m]")
 plt.ylabel("M")
 plt.title(f"Mach number over combustion at $T_{loc}$ = {T3b} K")
+ax.legend()
+plt.grid()
+
+fig, ax = plt.subplots()
+ax.plot(x, pressure/1000, label="pressure")
+plt.xlabel("distance along combustor [m]")
+plt.ylabel("Pressure [kPa]")
+plt.title(f"Pressure over combustion at $T_{loc}$ = {T3b} K")
 ax.legend()
 plt.grid()
 
