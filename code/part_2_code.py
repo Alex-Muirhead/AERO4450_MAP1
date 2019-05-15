@@ -268,8 +268,8 @@ print("                              M4 = ", np.round(M4,2))
 print("                              T4 = ", np.round(T4, 2), " K")
 print("                              P4 = ", np.round(P4/1000, 2), " kPa")
 print("                             Tt4 = ", np.round(Tt4,2), " K")
-print("[C2H4], [O2], [CO], [H2O], [CO2] = ", np.round(X4,5), " kmol/m^3")
-print("Y_C2H4, Y_O2, Y_CO, Y_H2O, Y_CO2 = ", np.round(Y4,5))
+print("[C2H4], [O2], [CO], [H2O], [CO2] = ", np.round(X4,7), " kmol/m^3")
+print("Y_C2H4, Y_O2, Y_CO, Y_H2O, Y_CO2 = ", np.round(Y4,7))
 
 
 loc = "{3b}"
