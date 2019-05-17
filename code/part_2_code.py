@@ -38,7 +38,7 @@ V3b = M3b * np.sqrt(yb * Rb * T3b)     # m/s
 A3 = mdot / (rho3b*V3b)                # m^2
 
 
-# --------------------- COmbustor Calculations ---------------------------
+# --------------------- Combustor Calculations ---------------------------
 
 # calculate initial concentrations
 n = 1 + 3*(1 + 3.76)
@@ -233,7 +233,7 @@ init_conds = np.append(X3, [Tt3b, M3b**2])
 
 # integrate IV
 sol = integrate.solve_ivp(
-    gradient, (0, 0.5),
+    gradient, (0, combustor_length),
     init_conds,
     method="LSODA",
     atol=1e-10, rtol=1e-10
@@ -278,7 +278,7 @@ v0 = 10 * np.sqrt(1.4 * 288 * 220)
 Pt4 = P4 / (1 + 0.5*(yb-1)*M4**2)**(-yb/(yb-1))
 A4 = 4*A3
 Pt10 = Pt4
-P0 = 24533
+P0 = 24533 # Pa
 P10 = 3 * P0
 M10 = np.sqrt(2 / (yb - 1)*((P10/Pt10)**(-(yb-1)/yb) - 1))
 A10onA4 = AonAstar(M10) / AonAstar(M4)
@@ -308,6 +308,7 @@ print("     A10 = ", np.round(A10, 2), " m^2")
 print("     M10 = ", np.round(M10, 2))
 print("     T10 = ", T10, " K")
 print("  thrust = ", thrust, " N")
+print("     P10 = ", np.round(P10/1000,2), " kPa")
 
 
 loc = "{3b}"
@@ -362,4 +363,4 @@ plt.title(f"Pressure over combustion at $T_{loc}$ = {T3b} K")
 ax.legend()
 plt.grid()
 
-#plt.show()
+plt.show()
