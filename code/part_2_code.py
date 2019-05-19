@@ -10,7 +10,7 @@ from scipy import interpolate
 from scipy import integrate
 import pandas as pd
 
-plt.style.use("./PaperDoubleFig.mplstyle")
+plt.style.use("code/PaperDoubleFig.mplstyle")
 
 
 # --------------------------- Universal constants ----------------------------
@@ -126,7 +126,7 @@ maskR[1, (4)] = True  # {CO2}
 
 chemData = []
 for species in ("C2H4", "O2", "CO", "H2O", "CO2"):
-    data = pd.read_csv(f"./chemData/{species}.txt", sep="\t", skiprows=1)
+    data = pd.read_csv(f"code/chemData/{species}.txt", sep="\t", skiprows=1)
     chemData.append(data[1:])  # Skip T=0K
 
 logKfuncs, deltaHfuncs = [], []
@@ -141,8 +141,7 @@ for data in chemData:
 
 def dTtdx(X, M, Tt, x, T):
     """Calculate spatial gradient of total temperature."""
-    h0f = np.array([np.float64(deltaHfuncs[i](T))
-                    for i in range(5)])  # kJ/kmol
+    h0f = np.array([deltaHfuncs[i](T) for i in range(5)])  # kJ/kmol
     h0f = h0f / MW  # kJ/kg
     temp_gradient = -1/cpb * np.sum(dYdx(X, M, Tt, x, T) * h0f)
     return temp_gradient
@@ -155,7 +154,7 @@ def dM2(M, X, x, Tt, T):
         -2 * dAonA(x, A3)  # area change
         + (1 + yb*M**2)*dTtdx(X, M, Tt, x, T)/Tt  # total temperature change
         + yb*M**2 * 4 * Cf / Deff  # friction
-        )
+    )
 
 
 def arrhenius(T):
@@ -188,12 +187,11 @@ def concentration_gradient(χ, M, Tt, T):
     χGrad = μ.T @ forward - μ.T @ reverse
 
     χGrad[(χGrad < 0)*limit] = 0
-
-    #  hGrad = -sum([dχ_i*h_i(T) for dχ_i, h_i in zip(χGrad, deltaHfuncs)])
     return χGrad
 
 
 # ---------- Calculate the spatial derivative of the concentrations ----------
+
 def dXdx(M, Tt, X, T):
     """Rate of change of concentration w.r.t space."""
     v = M * np.sqrt(yb * Rb * T)
@@ -222,10 +220,9 @@ def gradient(x, X, Tt, M2):
 def massFraction(X):
     """Convert concentration into mass fraction"""
     Y = X * MW / np.sum(X*MW) * (1 - YN2)
-    if  0.999 > np.sum(Y) + YN2 or np.sum(Y) + YN2 > 1.001:
+    if 0.999 > np.sum(Y) + YN2 or np.sum(Y) + YN2 > 1.001:
         print("total mass fraction = ", np.sum(Y) + YN2)
     return Y
-
 
 
 # create initial conditions vector
@@ -264,12 +261,12 @@ Y4 = Y[:, -1]
 P4 = pressure[-1]
 
 
+# ------------------------------- Nozzle solver -------------------------------
 
-# ----------------------------------------------- nozzle solver --------------------------------------------
 def AonAstar(M):
     power = (yb + 1) / (2*(yb-1))
     a = (yb + 1)/2
-    b = 1 + 0.5*(yb - 1) * M**2 
+    b = 1 + 0.5*(yb - 1) * M**2
     return a**(-power) * b**power / M
 
 
@@ -278,7 +275,7 @@ v0 = 10 * np.sqrt(1.4 * 288 * 220)
 Pt4 = P4 / (1 + 0.5*(yb-1)*M4**2)**(-yb/(yb-1))
 A4 = 4*A3
 Pt10 = Pt4
-P0 = 24533 # Pa
+P0 = 24533  # Pa
 P10 = 3 * P0
 M10 = np.sqrt(2 / (yb - 1)*((P10/Pt10)**(-(yb-1)/yb) - 1))
 A10onA4 = AonAstar(M10) / AonAstar(M4)
@@ -289,27 +286,85 @@ v10 = M10 * np.sqrt(yb * Rb * T10)
 thrust = mdot * (v10 - v0) + (P10 - P0) * A10
 
 
-# ------------------------------------------ Display results ------------------------------------------------
-#print combustor exit conditions
-print("------------------------------ Combustor Exit Conditions -----------------------------------------")
-print("                              M4 = ", np.round(M4,2))
-print("                              T4 = ", np.round(T4, 2), " K")
-print("                              P4 = ", np.round(P4/1000, 2), " kPa")
-print("                             Tt4 = ", np.round(Tt4,2), " K")
-print("                              Pt4 = ", np.round(Pt4/1000, 2), " kPa")
-print("[C2H4], [O2], [CO], [H2O], [CO2] = ", np.round(X4,7), " kmol/m^3")
-print("Y_C2H4, Y_O2, Y_CO, Y_H2O, Y_CO2 = ", np.round(Y4,7))
+# ------------------------------ Display results ------------------------------
 
 
-# print nozzle exit conditions
-print("\n------------------------------ Nozzle exit conditions --------------------------------------------")
-print("A10 / A4 = ", np.round(A10onA4,2))
-print("     A10 = ", np.round(A10, 2), " m^2")
-print("     M10 = ", np.round(M10, 2))
-print("     T10 = ", T10, " K")
-print("  thrust = ", thrust, " N")
-print("     P10 = ", np.round(P10/1000,2), " kPa")
+def kPa(Pa):
+    return Pa * 1E-03
 
+
+print(f"\n{' Combustor Exit Conditions ':-^61}\n")
+print(f"{'Mach Number':>30} & {M4:.2f}")
+print(f"{'Temperature':>30} & {T4:.2f} K")
+print(f"{'Pressure':>30} & {kPa(P4):.2f} kPa")
+print(f"{'Total Temperature':>30} & {Tt4:.2f} K")
+print(f"{'Total Pressure':>30} & {kPa(Pt4):.2f} kPa")
+
+print("")
+for species, Xs, Ys in zip(("C2H4", "O2", "CO", "H2O", "CO2"), X4, Y4):
+    print(
+        f"{species:>12} = {abs(Xs):.5f} kmol/m^3 = {abs(Ys):.5f} kg/kg"
+    )
+
+print(f"\n{' Nozzle exit conditions ':-^61}\n")
+
+print(f"{'Mach Number':>30} = {M10:.2f}")
+print(f"{'Temperature':>30} = {T4:.2f} K")
+print(f"{'Pressure':>30} = {kPa(P4):.2f} kPa")
+print(f"{'Exit Area':>30} = {A10:.2f} m^2")
+print(f"{'Area Ratio':>30} = {A10onA4:.2f}")
+print(f"{'Thrust':>30} = {thrust:.2f} N")
+
+
+# ========================== LaTeX Formatted Tables ==========================
+
+print(f"\n{'LaTeX formatted tables':-^61}\n")
+rowEnd = r" \\" + "\n"
+concentration = ["kmol", "per", "m", "cubed"]
+area = ["m", "squared"]
+
+
+def SI(value, *units, style="2f"):
+    unitCommands = "".join(["\\"+unit for unit in units])
+    formattedValue = f"{value:.{style}}"
+    if unitCommands:
+        return "\\SI{"+formattedValue+"}{"+unitCommands+"}"
+    else:
+        return "\\num{"+formattedValue+"}"
+
+
+print(f"{'Variable':^17} & {'Value':^16}", end=rowEnd)
+print(r"\midrule")
+print(f"{'Mach Number':>17} & {M4:>16.2f}", end=rowEnd)
+print(f"{'Temperature':>17} & {SI(T4, 'K'):>16}", end=rowEnd)
+print(f"{'Pressure':>17} & {SI(kPa(P4), 'kPa'):>16}", end=rowEnd)
+print(f"{'Total Temperature':>17} & {SI(Tt4, 'K'):>16}", end=rowEnd)
+print(f"{'Total Pressure':>17} & {SI(kPa(Pt4), 'K'):>16}", end=rowEnd)
+print(r"\bottomrule""\n")
+
+print(f"{'Variable':^11} & {'Value':^21}", end=rowEnd)
+print(r"\midrule")
+print(f"{'Mach Number':>11} & {M10:>21.2f}", end=rowEnd)
+print(f"{'Temperature':>11} & {SI(T10, 'K'):>21}", end=rowEnd)
+print(f"{'Pressure':>11} & {SI(kPa(P10), 'kPa'):>21}", end=rowEnd)
+print(f"{'Exit Area':>11} & {SI(A10, *area):>21}", end=rowEnd)
+print(f"{'Area Ratio':>11} & {SI(A10onA4):>21}", end=rowEnd)
+print(f"{'Thrust':>11} & {SI(thrust, 'N'):>21}", end=rowEnd)
+print(r"\bottomrule""\n")
+
+print(f"  Species & {'Concentration':^31} & {'Mass Fraction':^24}", end=rowEnd)
+print(r"\midrule")
+for s, Xs, Ys in zip(("C2H4", "O2", "CO", "H2O", "CO2"), X4, Y4):
+    print(
+        r"\ce{"f"{s:>4}"r"}",
+        "&", SI(abs(Xs), *concentration, style="5f"),
+        "&", SI(abs(Ys), "kg", "per", "kg", style="5f"),
+        end=rowEnd
+    )
+print(r"\bottomrule""\n")
+
+
+# =================================== Plots ===================================
 
 loc = "{3b}"
 fig, ax = plt.subplots()
