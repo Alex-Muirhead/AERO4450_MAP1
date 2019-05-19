@@ -30,7 +30,7 @@ M3b  = 3.814                           # mach number
 p3b  = 70.09                           # static pressure [kPa]
 T3b  = 1237.63                         # temperature [K]
 T3b  = 1380
-Tt3b = T3b * (1 + 0.5*(yb-1) * M3b**2) # stagnation temperature
+Tt3b = T3b * (1 + 0.5*(yb-1)*M3b**2)   # stagnation temperature
 # combined mass flow rate of stoichiometric mixture of ethylene and air [kg/s]
 mdot = 31.1186
 rho3b = p3b * 1e3 / (Rb * T3b)         # kg/m^3
@@ -47,7 +47,7 @@ X3 = np.array(
     [1/n, 3/n, 0.0, 0.0, 0.0]
 ) * p3b / (Ru * T3b)
 
-#calculate mass fraction of N2 at inlet
+# calculate mass fraction of N2 at inlet
 X_N2 = (3 * 3.76 / n) * p3b / (Ru * T3b)
 YN2 = X_N2 * 28 / (np.sum(X3 * MW) + X_N2 * 28)
 
@@ -242,17 +242,17 @@ x, X, Tt, M = sol.t, sol.y[0:5], sol.y[5], np.sqrt(sol.y[6])
 T = Tt * (1 + 0.5*(yb - 1) * M**2)**(-1)
 Y = np.array([massFraction(X[:, i]) for i in range(len(x))]).T
 
-#calculate velocity as function of position
+# calculate velocity as function of position
 vel = M * np.sqrt(yb * Rb * T)
 
-#calculate density as function of position
+# calculate density as function of position
 density = mdot / (vel * A(x, A3))
 
-#calculate pressure as function of position P = rho*R*T
+# calculate pressure as function of position P = rho*R*T
 pressure = density * Rb * T
 
 
-#calculate combustor exit conditions:
+# calculate combustor exit conditions:
 X4 = X[:, -1]
 Tt4 = Tt[-1]
 M4 = M[-1]
