@@ -29,13 +29,8 @@ cpb = Rb * yb/(yb-1) / 1000            # J/g/K specific heat constant pressure
 M3b  = 3.814                           # mach number
 p3b  = 70.09                           # static pressure [kPa]
 T3b  = 1237.63                         # temperature [K]
-<<<<<<< HEAD
-T3b  = 1400
-Tt3b = T3b * (1 + 0.5*(yb-1) * M3b**2) # stagnation temperature
-=======
 T3b  = 1380
 Tt3b = T3b * (1 + 0.5*(yb-1) * M3b**2)   # stagnation temperature
->>>>>>> 1066affa771f3819ebb3c2b2c81155eb24225076
 # combined mass flow rate of stoichiometric mixture of ethylene and air [kg/s]
 mdot = 31.1186
 rho3b = p3b * 1e3 / (Rb * T3b)         # kg/m^3
@@ -280,18 +275,10 @@ def A10onA0(M0, M10, P0, P10):
 # Sam's thrust 42.2 kN
 
 # Note there is an error in calculating something here
-<<<<<<< HEAD
 v0 = 10 * np.sqrt(1.4 * 287 * 220)
 rho0 = 2 * 50.e3 / v0**2
 P0 = rho0*287.*220.
 A0 = mdot / (rho0 * v0)
-=======
-v0 = 10 * np.sqrt(1.4 * 288 * 220)
-Pt4 = P4 / (1 + 0.5*(yb-1)*M4**2)**(-yb/(yb-1))
-A4 = 4*A3
-Pt10 = Pt4
-P0 = 24533  # Pa
->>>>>>> 1066affa771f3819ebb3c2b2c81155eb24225076
 P10 = 3 * P0
 
 M10_dash = np.sqrt((2/(yb -1))*((P4/P10)**((yb-1)/yb) * (1 + 0.5*(yb-1)*M4**4) - 1 ))
@@ -308,36 +295,6 @@ thrust = mdot * (v10 - v0) + (P10 - P0) * A10
 SF = thrust / mdot
 
 
-<<<<<<< HEAD
-# ------------------------------------------ Display results ------------------------------------------------
-#print combustor exit conditions
-print("------------------------------ Combustor Exit Conditions -----------------------------------------")
-print("                              M4 = ", np.round(M4,2))
-print("                              T4 = ", np.round(T4, 2), " K")
-print("                              P4 = ", np.round(P4/1000, 2), " kPa")
-print("                             Tt4 = ", np.round(Tt4,2), " K")
-#print("                             Pt4 = ", np.round(Pt4/1000, 2), " kPa")
-print("[C2H4], [O2], [CO], [H2O], [CO2] = ", np.round(X4,7), " kmol/m^3")
-print("Y_C2H4, Y_O2, Y_CO, Y_H2O, Y_CO2 = ", np.round(Y4,7))
-
-
-# print nozzle exit conditions
-print("\n------------------------------ Nozzle exit conditions --------------------------------------------")
-print(f"     A10 = {A10:.2f} m^2")
-print(f"  A10/A0 = {A10/A0:.2f}")
-print(f"    M10' = {M10_dash:.2f}")
-print(f"     M10 = {M10:.2f}")
-print(f"    T10' = {T10_dash:.2f} K")
-print(f"     P10 = {P10/1000:.2f} kPa")
-
-
-
-# print scram jet performance
-print("\n------------------------------- Performance -------------------------------------")
-print(f"  thrust = {4*thrust:.2f} N")
-
-
-=======
 # ------------------------------ Display results ------------------------------
 
 
@@ -415,7 +372,6 @@ for s, Xs, Ys in zip(("C2H4", "O2", "CO", "H2O", "CO2"), X4, Y4):
     )
 print(r"\bottomrule""\n")
 
->>>>>>> 1066affa771f3819ebb3c2b2c81155eb24225076
 
 # =================================== Plots ===================================
 
