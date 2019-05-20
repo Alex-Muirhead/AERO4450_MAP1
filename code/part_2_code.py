@@ -1,7 +1,7 @@
 """
 AERO4450 Major Assignment Part 2
 Authors: Alex Muirhead and Robert Watt
-Purpose: Simulate the combustion in a variable area scramjet combustor
+Purpose: Simulate the combustion and calculate thrust produced by a scramjet
 """
 
 import numpy as np
@@ -29,7 +29,7 @@ cpb = Rb * yb/(yb-1) / 1000            # J/g/K specific heat constant pressure
 M3b  = 3.814                           # mach number
 p3b  = 70.09                           # static pressure [kPa]
 T3b  = 1237.63                         # temperature [K]
-T3b  = 1380
+T3b  = 1400
 Tt3b = T3b * (1 + 0.5*(yb-1) * M3b**2) # stagnation temperature
 # combined mass flow rate of stoichiometric mixture of ethylene and air [kg/s]
 mdot = 31.1186
@@ -272,21 +272,30 @@ def AonAstar(M):
     b = 1 + 0.5*(yb - 1) * M**2 
     return a**(-power) * b**power / M
 
+def A10onA0(M0, M10, P0, P10):
+    return P0 * M0 / (P10 * M10) * np.sqrt(1.4 * 287 * 220) / np.sqrt(yb * Rb * T10_dash)
+
+# Sam's thrust 42.2 kN
 
 # Note there is an error in calculating something here
-v0 = 10 * np.sqrt(1.4 * 288 * 220)
-Pt4 = P4 / (1 + 0.5*(yb-1)*M4**2)**(-yb/(yb-1))
-A4 = 4*A3
-Pt10 = Pt4
-P0 = 24533 # Pa
+v0 = 10 * np.sqrt(1.4 * 287 * 220)
+rho0 = 2 * 50.e3 / v0**2
+P0 = rho0*287.*220.
+A0 = mdot / (rho0 * v0)
 P10 = 3 * P0
-M10 = np.sqrt(2 / (yb - 1)*((P10/Pt10)**(-(yb-1)/yb) - 1))
-A10onA4 = AonAstar(M10) / AonAstar(M4)
-A10 = A4 * A10onA4
-T10 = Tt4 * (1 + 0.5*(yb - 1) * M10**2)**(-1)
-v10 = M10 * np.sqrt(yb * Rb * T10)
 
+M10_dash = np.sqrt((2/(yb -1))*((P4/P10)**((yb-1)/yb) * (1 + 0.5*(yb-1)*M4**4) - 1 ))
+T10_dash = Tt4 * (1 + 0.5*(yb - 1) * M10_dash**2)**(-1)
+v10_dash = M10_dash * np.sqrt(yb * Rb * T10_dash)
+v10 = 0.95 * v10_dash
+M10 = v10 / np.sqrt(yb * Rb * T10_dash)
+A0 = mdot / (rho0 * v0)
+A10 =  A0 * (P0 * 10 / (P10 * M10_dash) * np.sqrt(1.4 * Rb * T10_dash / ( yb * 287 * 220 )))
+
+
+# Calculate performance of scramjet
 thrust = mdot * (v10 - v0) + (P10 - P0) * A10
+SF = thrust / mdot
 
 
 # ------------------------------------------ Display results ------------------------------------------------
@@ -296,19 +305,27 @@ print("                              M4 = ", np.round(M4,2))
 print("                              T4 = ", np.round(T4, 2), " K")
 print("                              P4 = ", np.round(P4/1000, 2), " kPa")
 print("                             Tt4 = ", np.round(Tt4,2), " K")
-print("                              Pt4 = ", np.round(Pt4/1000, 2), " kPa")
+#print("                             Pt4 = ", np.round(Pt4/1000, 2), " kPa")
 print("[C2H4], [O2], [CO], [H2O], [CO2] = ", np.round(X4,7), " kmol/m^3")
 print("Y_C2H4, Y_O2, Y_CO, Y_H2O, Y_CO2 = ", np.round(Y4,7))
 
 
 # print nozzle exit conditions
 print("\n------------------------------ Nozzle exit conditions --------------------------------------------")
-print("A10 / A4 = ", np.round(A10onA4,2))
-print("     A10 = ", np.round(A10, 2), " m^2")
-print("     M10 = ", np.round(M10, 2))
-print("     T10 = ", T10, " K")
-print("  thrust = ", thrust, " N")
-print("     P10 = ", np.round(P10/1000,2), " kPa")
+print(f"     A10 = {A10:.2f} m^2")
+print(f"  A10/A0 = {A10/A0:.2f}")
+print(f"    M10' = {M10_dash:.2f}")
+print(f"     M10 = {M10:.2f}")
+print(f"    T10' = {T10_dash:.2f} K")
+print(f"     P10 = {P10/1000:.2f} kPa")
+
+
+
+# print scram jet performance
+print("\n------------------------------- Performance -------------------------------------")
+print(f"  thrust = {4*thrust:.2f} N")
+
+
 
 
 loc = "{3b}"
@@ -363,4 +380,4 @@ plt.title(f"Pressure over combustion at $T_{loc}$ = {T3b} K")
 ax.legend()
 plt.grid()
 
-plt.show()
+#plt.show()
