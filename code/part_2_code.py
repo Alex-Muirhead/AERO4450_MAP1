@@ -4,13 +4,15 @@ Authors: Alex Muirhead and Robert Watt
 Purpose: Simulate the combustion and calculate thrust produced by a scramjet
 """
 
+from math import sqrt
+
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy import interpolate
 from scipy import integrate
 import pandas as pd
 
-plt.style.use("code/PaperDoubleFig.mplstyle")
+plt.style.use("PaperDoubleFig.mplstyle")
 
 
 # --------------------------- Universal constants ----------------------------
@@ -42,14 +44,14 @@ A3 = mdot / (rho3b*V3b)                # m^2
 
 # calculate initial concentrations
 n = 1 + 3*(1 + 3.76)
-MW = np.array([28, 32, 28, 18, 44])    # kg/kmol
+mWeights = np.array([28, 32, 28, 18, 44])    # kg/kmol
 X3 = np.array(
     [1/n, 3/n, 0.0, 0.0, 0.0]
 ) * p3b / (Ru * T3b)
 
 # calculate mass fraction of N2 at inlet
 X_N2 = (3 * 3.76 / n) * p3b / (Ru * T3b)
-YN2 = X_N2 * 28 / (np.sum(X3 * MW) + X_N2 * 28)
+massFractionNitrogen = X_N2 * 28 / (np.sum(X3 * mWeights) + X_N2 * 28)
 
 # --------------------------- Combustor properties ---------------------------
 
@@ -68,13 +70,19 @@ def dAonA(x, A3, length=0.5):
     return 3 * A3 / (length * A(x, A3))
 
 
-def vectorInterface(lengths):
+def vectorInterface(argLengths):
     """Decorator to re-order vector into multiple variables."""
-    L = [0, *np.cumsum(lengths)]
+    start, slices = 0, []
+    for length in argLengths:
+        if length == 1:
+            slices.append(start)
+        else:
+            slices.append(slice(start, start+length))
+        start += length
 
     def wrapper(func):
         def inner(t, args):
-            splitArgs = [args[l:r] for l, r in zip(L[:-1], L[1:])]
+            splitArgs = [args[s] for s in slices]
             output = func(t, *splitArgs)
             return np.hstack([*output])
         return inner
@@ -118,15 +126,14 @@ maskF[0, (0, 1)] = True  # {C2H4,  O2}
 maskR[0, (2, 3)] = True  # {CO, H2O}
 
 maskF[1, (1, 2)] = True  # {CO, O2}
-maskR[1, (4)] = True  # {CO2}
+maskR[1, (4)]    = True  # {CO2}
 
 
 # --------------------------- Import Chemical Data ---------------------------
 
-
 chemData = []
 for species in ("C2H4", "O2", "CO", "H2O", "CO2"):
-    data = pd.read_csv(f"code/chemData/{species}.txt", sep="\t", skiprows=1)
+    data = pd.read_csv(f"chemData/{species}.txt", sep="\t", skiprows=1)
     chemData.append(data[1:])  # Skip T=0K
 
 logKfuncs, deltaHfuncs = [], []
@@ -137,24 +144,6 @@ for data in chemData:
     deltaH = data["delta-f H"].values.astype(float) * 1e+03
     logKfuncs.append(interpolate.interp1d(T, logKf, kind="quadratic"))
     deltaHfuncs.append(interpolate.interp1d(T, deltaH, kind="quadratic"))
-
-
-def dTtdx(X, M, Tt, x, T):
-    """Calculate spatial gradient of total temperature."""
-    h0f = np.array([deltaHfuncs[i](T) for i in range(5)])  # kJ/kmol
-    h0f = h0f / MW  # kJ/kg
-    temp_gradient = -1/cpb * np.sum(dYdx(X, M, Tt, x, T) * h0f)
-    return temp_gradient
-
-
-def dM2(M, X, x, Tt, T):
-    """Calculate spatial derivative of the square of the mach number"""
-    Deff = 2 * np.sqrt(A(x, A3) / np.pi)
-    return M**2 * ((1 + 0.5*(yb - 1)*M**2) / (1 - M**2)) * (
-        -2 * dAonA(x, A3)  # area change
-        + (1 + yb*M**2)*dTtdx(X, M, Tt, x, T)/Tt  # total temperature change
-        + yb*M**2 * 4 * Cf / Deff  # friction
-    )
 
 
 def arrhenius(T):
@@ -173,55 +162,65 @@ def Kc(T):
     return np.prod(reverse, axis=1) / np.prod(forward, axis=1)
 
 
-def concentration_gradient(χ, M, Tt, T):
-    """Return the gradient of the concentrations in time."""
-    limit = (χ < 0)
-    χ[limit] = 0
+def concentrationGradient(X, M, T):
+    """Return the gradient of the concentrations in space."""
+    limit = (X < 0)
+    X[limit] = 0
 
     kf = arrhenius(T)
     kr = kf / Kc(T)
     kr[0] = 0  # One way reaction
 
-    forward = kf * np.prod(pow(χ, maskF*ν), axis=1)
-    reverse = kr * np.prod(pow(χ, maskR*ν), axis=1)
-    χGrad = μ.T @ forward - μ.T @ reverse
+    forward = kf * np.prod(pow(X, maskF*ν), axis=1)
+    reverse = kr * np.prod(pow(X, maskR*ν), axis=1)
+    XRate = μ.T @ forward - μ.T @ reverse
 
-    χGrad[(χGrad < 0)*limit] = 0
-    return χGrad
+    XRate[(XRate < 0)*limit] = 0
 
-
-# ---------- Calculate the spatial derivative of the concentrations ----------
-
-def dXdx(M, Tt, X, T):
-    """Rate of change of concentration w.r.t space."""
-    v = M * np.sqrt(yb * Rb * T)
-    return concentration_gradient(X, M, Tt, T) / v
+    XGrad = XRate / (M*sqrt(yb*Rb*T))
+    return XGrad
 
 
-def dYdx(X, M, Tt, x, T):
+def massFractionGradient(X, dXdx):
     """Rate of change of mass fraction w.r.t space."""
-    reacting_sum = np.sum(X * MW)
-    return MW * (1 - YN2) * (
-        dXdx(M, Tt, X, T)/reacting_sum
-        - X * np.sum(MW * dXdx(M, Tt, X, T)) / reacting_sum**2
+    avgMWeight = np.sum(X*mWeights)
+    return mWeights * (1 - massFractionNitrogen) * (
+        dXdx / avgMWeight - X*np.sum(dXdx*mWeights) / avgMWeight**2
+    )
+
+
+def dTtdx(X, M, Tt, x, T):
+    """Calculate spatial gradient of total temperature."""
+    h0f = np.array([deltaHfuncs[i](T) for i in range(5)])  # kJ/kmol
+    h0f = h0f / mWeights  # kJ/kg
+    temp_gradient = -1/cpb * np.sum(dYdx(X, M, Tt, x, T) * h0f)
+    return temp_gradient
+
+
+def dM2(M, X, x, Tt, T):
+    """Calculate spatial derivative of the square of the mach number"""
+    Deff = 2 * np.sqrt(A(x, A3) / np.pi)
+    return M**2 * ((1 + 0.5*(yb - 1)*M**2) / (1 - M**2)) * (
+        -2 * dAonA(x, A3)  # area change
+        + (1 + yb*M**2)*dTtdx(X, M, Tt, x, T)/Tt  # total temperature change
+        + yb*M**2 * 4 * Cf / Deff  # friction
     )
 
 
 @vectorInterface((5, 1, 1))
 def gradient(x, X, Tt, M2):
     """Return the gradient of all variables in a single vector"""
-    x = np.float64(x)
-    Tt = np.float64(Tt)
-    M = np.sqrt(np.float64(M2))
+    M = np.sqrt(M2)
     T = Tt * (1 + 0.5*(yb - 1) * M**2)**(-1)
-    return dXdx(M, Tt, X, T), dTtdx(X, M, Tt, x, T), dM2(M, X, x, Tt, T)
+    dXdx = concentrationGradient(X, M, T)
+    return dXdx, dTtdx(X, M, Tt, x, T), dM2(M, X, x, Tt, T)
 
 
 def massFraction(X):
     """Convert concentration into mass fraction"""
-    Y = X * MW / np.sum(X*MW) * (1 - YN2)
-    if 0.999 > np.sum(Y) + YN2 or np.sum(Y) + YN2 > 1.001:
-        print("total mass fraction = ", np.sum(Y) + YN2)
+    Y = X * mWeights / np.sum(X*mWeights) * (1 - massFractionNitrogen)
+    if abs(np.sum(Y) + massFractionNitrogen - 1) > 0.001:
+        print("total mass fraction = ", np.sum(Y) + massFractionNitrogen)
     return Y
 
 
