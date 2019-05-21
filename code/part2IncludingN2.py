@@ -201,7 +201,7 @@ cp = R * k/(k-1) / 1000                # J/g/K specific heat constant pressure
 M3b  = 3.814                           # mach number
 p3b  = 70.09                           # static pressure [kPa]
 T3b  = 1237.63                         # temperature [K]
-T3b  = 1237.63
+#T3b  = 1400
 Tt3b = T3b * (1 + 0.5*(k-1) * M3b**2)  # stagnation temperature
 # combined mass flow rate of stoichiometric mixture of ethylene and air [kg/s]
 mdot  = 31.1186
@@ -404,6 +404,11 @@ with open("LaTeX.txt", "w") as output:
 
 # =================================== Plots ===================================
 
+if T3b % 1 == 0:
+    temp_label = T3b
+else:
+    temp_label = round(T3b)
+
 loc = "{3b}"
 fig, ax = plt.subplots()
 formula = ("C$_2$H$_4$", "O$_2$", "CO", "H$_2$O", "CO$_2$", "N$_2$")
@@ -413,7 +418,7 @@ plt.xlabel("distance along combustor [m]")
 plt.ylabel("Concentration [kmol/m$^3$]")
 plt.title(f"concentration over combustion at $T_{loc}$ = {T3b} K")
 plt.grid()
-plt.savefig(f"../part_2_img/concentration_{T3b}.pdf")
+plt.savefig(f"../part_2_img/concentration_{temp_label}.pdf")
 
 fig, ax = plt.subplots()
 [ax.plot(x, Y[i], label=formula[i]) for i in range(5)]
@@ -422,7 +427,7 @@ plt.xlabel("distance along combustor [m]")
 plt.ylabel("Mass fraction")
 plt.title(f"Mass fraction over combustion at $T_{loc}$ = {T3b} K")
 plt.grid()
-plt.savefig(f"../part_2_img/mass_fraction_{T3b}.pdf")
+plt.savefig(f"../part_2_img/mass_fraction_{temp_label}.pdf")
 
 fig, ax = plt.subplots()
 ax.plot(x, Tt, label="Tt")
@@ -432,7 +437,7 @@ plt.ylabel("$T_0$ [K]")
 plt.title(f"Stagnation temperature over combustion at $T_{loc}$ = {T3b} K")
 ax.legend()
 plt.grid()
-plt.savefig(f"../part_2_img/stag_temp_{T3b}.pdf")
+plt.savefig(f"../part_2_img/stag_temp_{temp_label}.pdf")
 
 fig, ax = plt.subplots()
 ax.plot(x, T, label="T")
@@ -441,7 +446,7 @@ plt.ylabel("T [K]")
 ax.legend()
 plt.title(f"Static temperature over combustion at $T_{loc}$ = {T3b} K")
 plt.grid()
-plt.savefig(f"../part_2_img/static_temp_{T3b}.pdf")
+plt.savefig(f"../part_2_img/static_temp_{temp_label}.pdf")
 
 fig, ax = plt.subplots()
 ax.plot(x, M, label="M")
@@ -450,7 +455,7 @@ plt.ylabel("M")
 plt.title(f"Mach number over combustion at $T_{loc}$ = {T3b} K")
 ax.legend()
 plt.grid()
-plt.savefig(f"../part_2_img/mach_{T3b}.pdf")
+plt.savefig(f"../part_2_img/mach_{temp_label}.pdf")
 
 fig, ax = plt.subplots()
 ax.plot(x, kPa(P), label="pressure")
@@ -459,6 +464,6 @@ plt.ylabel("Pressure [kPa]")
 plt.title(f"Pressure over combustion at $T_{loc}$ = {T3b} K")
 ax.legend()
 plt.grid()
-plt.savefig(f"../part_2_img/pressure_{T3b}.pdf")
+plt.savefig(f"../part_2_img/pressure_{temp_label}.pdf")
 
 #plt.show()
