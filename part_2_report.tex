@@ -1,0 +1,91 @@
+\documentclass[a4paper]{article}
+
+\usepackage{reportFormat}
+
+
+\title{
+	\Large {\sc Mech}4450 Aerospace Propulsion \\
+	\Huge Major Assignment - Part 2
+}
+
+\author{
+	Muirhead, Alex \\ \texttt{s4435062}
+	\and
+	Watt, Robert \\ \texttt{s4431151}
+}
+
+\date{\today}
+
+\begin{document}
+
+\pagenumbering{gobble}
+\maketitle
+
+% \tableofcontents
+
+\vspace{10em}
+
+\newpage
+\pagenumbering{arabic}
+
+
+\section{Inlet Modelling}
+The flight conditions of the scramjet can be used to calculate properties of the gas entering the scramjet. The initial velocity entering the inlet is calculated from the Mach number and temperature of the flight:
+
+\begin{align}
+    v_0 &= M_0 \sqrt{\gamma R T}\\
+    &= 10 \times \sqrt{1.4 \times 287 \times 220}\\
+    &= 2973 \, \mathrm{m/s}
+\end{align}
+
+And the fact that the vehicle operates at constant dynamic pressure, \(q_0 = \frac{1}{2}\rho_0v_0^2 = 50 \, \mathrm{kPa}\), can be used to calculate the density at the inlet.
+
+\begin{align}
+    \rho_0 &= \frac{2 q_0}{v_0^2}\\
+    &= \frac{2 \times 50 \times 10^3}{2973^2}\\
+    &= 0.011 \, \mathrm{kg/m^3}
+\end{align}
+
+And the ideal gas law can be used to calculate the pressure at the inlet.
+
+\begin{align}
+    P_0 &= \rho_0 R T\\
+    &= 0.011 \times 287 \times 220\\
+    &= 714.4 \, \mathrm{Pa}
+\end{align}
+
+The specific heat at constant pressure for the air fuel mixture can be calculated from the ratio of specific heats and gas constant determined from the CFD modelling of the inlet.
+
+\begin{align}
+    c_{pb} &= \frac{\gamma_b}{\gamma_b - 1}Rb\\
+    &= \frac{1.3205}{1.3205 - 1}\times 288.45\\
+    &= 1188.45 \, \mathrm{J/kg/K}\\
+    &= 1.18845 \, \mathrm{J/g/K}
+\end{align}
+
+The density of the air fuel mixture at the inlet to the combustor can be calculated using the ideal gas law.
+
+\begin{align}
+    \rho_{3b} &= \frac{P_{3b}}{RT_{3b}}\\
+    &= \frac{70.09 \times 10^3}{288.45 \times 1400}\\
+    &= 0.174 \, \mathrm{kg/m^3}
+\end{align}
+
+The area of the inlet to the combustor, \(A_3\) can be calculated from conservation of mass applied to the fully mixed air-fuel mixture at the combustor inlet.
+
+\begin{align}
+    A_3 = \frac{\dot{m}}{\rho_{3b} v_{3b}}
+\end{align}
+
+CALCULATE THE REMAINING FLOW STATES
+
+
+\section{Combustor Modelling}
+
+The combustor is modelled as a diverging circular cross section area. The cross section area at the end of the combustor is 
+
+\section{Nozzle Modelling}
+
+\section{Overall Performance and Discussion}
+
+\end{document}
