@@ -165,8 +165,8 @@ def machGradient(x, Msqr, Tt, dTtdx, A, dAdx):
     diamEff = 2 * sqrt(A/pi)
     return Msqr * ((1 + 0.5*(k-1)*Msqr) / (1 - Msqr)) * (
         - 2*dAdx/A                     # area change
-        + dTtdx/Tt * (1 + k*Msqr)       # total temperature change
-        + 4*Cf/diamEff * k*Msqr         # friction
+        + dTtdx/Tt * (1 + k*Msqr)      # total temperature change
+        + 4*Cf/diamEff * k*Msqr        # friction
     )
 
 
@@ -213,7 +213,14 @@ A3    = mdot / (rho3b*V3b)             # m^2
 
 # calculate initial concentrations
 n = 1 + 3*(1 + 3.76)
-mWeights = np.array([28, 32, 28, 18, 44, 28])    # kg/kmol
+mWeights = np.array([
+    28.054,  # C2H4
+    31.998,  #   O2
+    28.01,   #   CO
+    18.015,  #  H2O
+    44.009,  #  CO2
+    28.014   #   N2
+])           # kg/kmol
 X3 = np.array(
     [1/n, 3/n, 0.0, 0.0, 0.0, 3*3.76/n]
 ) * p3b / (Ru * T3b)
@@ -267,30 +274,38 @@ P4  = P[-1]
 
 # ------------------------------- Nozzle solver -------------------------------
 
-# Sam's thrust 42.2 kN
-
+fuelRatio = Y[0, 0] / sum(Y[0, :])
+mdotAir = mdot * (1 - fuelRatio)
 
 # Note there is an error in calculating something here
-v0   = 10 * sqrt(1.4 * 287 * 220)
-rho0 = 2 * 50.e3 / v0**2
-P0   = rho0 * 287 * 220
-A0   = mdot / (rho0 * v0)
+q0   = 50e+03
+T0   = 220
+M0   = 10
+v0   = M0 * sqrt(1.4 * 287 * T0)
+rho0 = 2 * q0 / v0**2
+P0   = rho0 * 287 * T0
+A0   = mdotAir / (rho0 * v0)
 
-P10 = 3 * P0
-M10_ = sqrt( 2/(k-1) * ( pow(P4/P10, (k-1)/k) * (1 + 0.5*(k-1)*M4**4) - 1 ) )
-T10_ = Tt4 * (1 + 0.5*(k-1) * M10_**2)**(-1)
+P10  = 3 * P0
+M10_ = sqrt( 2/(k-1) * ( pow(P4/P10, (k-1)/k) * (1 + 0.5*(k-1)*M4**2) - 1 ) )
+Tt10 = Tt4
+T10_ = Tt10 * (1 + 0.5*(k-1) * M10_**2)**(-1)
 v10_ = M10_ * sqrt(k*R*T10_)
 v10  = 0.95 * v10_
-M10  = v10 / sqrt(k*R*T10_)
+T10  = Tt10 - 0.5*v10**2 / (cp*1E+03)
+M10  = v10 / sqrt(k*R*T10)
 
-rho10 = P10 / (R * T10_)  # Ideal gas law
-G10   = rho10 * (M10_ * sqrt(k*R*T10_))
-A10   = mdot / G10
+rho10 = P10 / (R*T10)  # Ideal gas law
+A10   = mdot / (rho10*v10)
 
 
-# Calculate performance of scramjet
-thrust = mdot * (v10 - v0) + (P10 - P0) * A10
-SF = thrust / mdot
+# --------------------- Calculate performance of scramjet ---------------------
+
+thrustPerEngine = mdot * (v10 - v0) + (P10 - P0) * A10
+specificThrust  = thrustPerEngine / mdot
+
+craftDrag = q0 * (9.25E-03) * (62.77)  # = q * Cd * Aref
+netForce  = 4 * thrustPerEngine - craftDrag
 
 
 # ------------------------------ Display results ------------------------------
@@ -300,29 +315,39 @@ def kPa(Pa):
     return Pa * 1E-03
 
 
-print(f"\n{' Combustor Exit Conditions ':-^61}\n")
-print(f"{'Mach Number':>30} = {M4:.2f}")
-print(f"{'Temperature':>30} = {T4:.2f} K")
-print(f"{'Pressure':>30} = {kPa(P4):.2f} kPa")
-print(f"{'Total Temperature':>30} = {Tt4:.2f} K")
-# print(f"{'Total Pressure':>30} = {kPa(Pt4):.2f} kPa")
+print(f"\n{' Inlet conditions ':-^53}\n")
+print(f"{'Mach Number':>25} = {M0:.2f}")
+print(f"{'Temperature':>25} = {T0:.2f} K")
+print(f"{'Pressure':>25} = {kPa(P0):.2f} kPa")
+print(f"{'Inlet Area':>25} = {A0:.2f} m^2")
+
+print(f"\n{' Combustor Exit Conditions ':-^53}\n")
+print(f"{'Mach Number':>25} = {M4:.2f}")
+print(f"{'Temperature':>25} = {T4:.2f} K")
+print(f"{'Pressure':>25} = {kPa(P4):.2f} kPa")
+print(f"{'Total Temperature':>25} = {Tt4:.2f} K")
+# print(f"{'Total Pressure':>25} = {kPa(Pt4):.2f} kPa")
 
 print("")
 for species, Xs, Ys in zip(allSpecies, X4, Y4):
     print(
-        f"{species:>12} = {abs(Xs):.5f} kmol/m^3 = {abs(Ys):.5f} kg/kg"
+        f"{species:>10} = {abs(Xs):.5f} kmol/m^3 = {abs(Ys):.5f} kg/kg"
     )
 
-print(f"\n{' Nozzle exit conditions ':-^61}\n")
+print(f"\n{' Nozzle exit conditions ':-^53}\n")
+print(f"{'Mach Number':>25} = {M10:.2f}")
+print(f"{'Temperature':>25} = {T4:.2f} K")
+print(f"{'Pressure':>25} = {kPa(P10):.2f} kPa")
+print(f"{'Exit Area':>25} = {A10:.2f} m^2")
+print(f"{'Capture Area Ratio':>25} = {A10/A0:.2f}")
 
-print(f"{'Mach Number':>30} = {M10:.2f}")
-print(f"{'Temperature':>30} = {T4:.2f} K")
-print(f"{'Pressure':>30} = {kPa(P4):.2f} kPa")
-print(f"{'Exit Area':>30} = {A10:.2f} m^2")
-# print(f"{'Area Ratio':>30} = {A10onA4:.2f}")
-print(f"{'Thrust':>30} = {thrust:.2f} N")
+print(f"\n{' Scramjet performance ':-^53}\n")
+print(f"{'Thrust per Engine':>25} = {thrustPerEngine:.2f} N")
+print(f"{'Specfic Thrust':>25} = {specificThrust:.2f} N.s/kg")
+print(f"{'Drag':>25} = {craftDrag:.2f} N")
+print(f"{'Net force':>25} = {netForce:.2f} N")
 
-print("\n" + '-'*61)
+print("\n" + '-'*53)
 
 
 # ========================== LaTeX Formatted Tables ==========================
@@ -342,22 +367,22 @@ def SI(value, *units, style="2f"):
 
 
 lines = [
-    f"{'Variable':^17} & {'Value':^16}",               rowEnd,
-    r"\midrule",                                      "\n",
-    f"{'Mach Number':>17} & {M4:>16.2f}",              rowEnd,
-    f"{'Temperature':>17} & {SI(T4, 'K'):>16}",        rowEnd,
-    f"{'Pressure':>17} & {SI(kPa(P4), 'kPa'):>16}",    rowEnd,
-    f"{'Total Temperature':>17} & {SI(Tt4, 'K'):>16}", rowEnd,
-    r"\bottomrule",                                   "\n",
+    f"{'Variable':^17} & {'Value':^16}",                rowEnd,
+    r"\midrule",                                       "\n",
+    f"{'Mach Number':>17} & {M4:>16.2f}",               rowEnd,
+    f"{'Temperature':>17} & {SI(T4, 'K'):>16}",         rowEnd,
+    f"{'Pressure':>17} & {SI(kPa(P4), 'kPa'):>16}",     rowEnd,
+    f"{'Total Temperature':>17} & {SI(Tt4, 'K'):>16}",  rowEnd,
+    r"\bottomrule",                                    "\n",
     "\n",
-    f"{'Variable':^11} & {'Value':^21}",               rowEnd,
-    r"\midrule",                                      "\n",
-    f"{'Mach Number':>11} & {M10:>21.2f}",             rowEnd,
-    f"{'Temperature':>11} & {SI(T10_, 'K'):>21}",      rowEnd,
-    f"{'Pressure':>11} & {SI(kPa(P10), 'kPa'):>21}",   rowEnd,
-    f"{'Exit Area':>11} & {SI(A10, *area):>21}",       rowEnd,
-    f"{'Thrust':>11} & {SI(thrust, 'N'):>21}",         rowEnd,
-    r"\bottomrule",                                   "\n",
+    f"{'Variable':^11} & {'Value':^21}",                rowEnd,
+    r"\midrule",                                       "\n",
+    f"{'Mach Number':>11} & {M10:>21.2f}",              rowEnd,
+    f"{'Temperature':>11} & {SI(T10_, 'K'):>21}",       rowEnd,
+    f"{'Pressure':>11} & {SI(kPa(P10), 'kPa'):>21}",    rowEnd,
+    f"{'Exit Area':>11} & {SI(A10, *area):>21}",        rowEnd,
+    f"{'Thrust':>11} & {SI(thrustPerEngine, 'N'):>21}", rowEnd,
+    r"\bottomrule",                                    "\n",
     "\n"
 ]
 
