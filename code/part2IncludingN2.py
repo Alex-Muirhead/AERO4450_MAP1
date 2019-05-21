@@ -11,7 +11,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from scipy import integrate, interpolate
 
-plt.style.use("code/PaperDoubleFig.mplstyle")
+plt.style.use("PaperDoubleFig.mplstyle")
 
 
 def vectorInterface(argLengths):
@@ -83,7 +83,7 @@ beta  = maskR * nuExp
 
 allSpecies, chemData = ("C2H4", "O2", "CO", "H2O", "CO2", "N2"), []
 for species in allSpecies:
-    data = pd.read_csv(f"code/chemData/{species}.txt", sep="\t", skiprows=1)
+    data = pd.read_csv(f"chemData/{species}.txt", sep="\t", skiprows=1)
     chemData.append(data[1:])  # Skip T=0K
 
 logKfuncs, deltaHfuncs = [], []
@@ -386,7 +386,7 @@ lines = [
     "\n"
 ]
 
-with open("code/LaTeX.txt", "w") as output:
+with open("LaTeX.txt", "w") as output:
     for line in lines:
         output.write(line)
 
