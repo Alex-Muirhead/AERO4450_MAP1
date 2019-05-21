@@ -11,7 +11,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from scipy import integrate, interpolate
 
-plt.style.use("PaperDoubleFig.mplstyle")
+plt.style.use("code/PaperDoubleFig.mplstyle")
 
 
 def vectorInterface(argLengths):
@@ -83,7 +83,7 @@ beta  = maskR * nuExp
 
 allSpecies, chemData = ("C2H4", "O2", "CO", "H2O", "CO2", "N2"), []
 for species in allSpecies:
-    data = pd.read_csv(f"chemData/{species}.txt", sep="\t", skiprows=1)
+    data = pd.read_csv(f"code/chemData/{species}.txt", sep="\t", skiprows=1)
     chemData.append(data[1:])  # Skip T=0K
 
 logKfuncs, deltaHfuncs = [], []
@@ -301,11 +301,11 @@ def kPa(Pa):
 
 
 print(f"\n{' Combustor Exit Conditions ':-^61}\n")
-print(f"{'Mach Number':>30} & {M4:.2f}")
-print(f"{'Temperature':>30} & {T4:.2f} K")
-print(f"{'Pressure':>30} & {kPa(P4):.2f} kPa")
-print(f"{'Total Temperature':>30} & {Tt4:.2f} K")
-# print(f"{'Total Pressure':>30} & {kPa(Pt4):.2f} kPa")
+print(f"{'Mach Number':>30} = {M4:.2f}")
+print(f"{'Temperature':>30} = {T4:.2f} K")
+print(f"{'Pressure':>30} = {kPa(P4):.2f} kPa")
+print(f"{'Total Temperature':>30} = {Tt4:.2f} K")
+# print(f"{'Total Pressure':>30} = {kPa(Pt4):.2f} kPa")
 
 print("")
 for species, Xs, Ys in zip(allSpecies, X4, Y4):
@@ -322,10 +322,11 @@ print(f"{'Exit Area':>30} = {A10:.2f} m^2")
 # print(f"{'Area Ratio':>30} = {A10onA4:.2f}")
 print(f"{'Thrust':>30} = {thrust:.2f} N")
 
+print("\n" + '-'*61)
+
 
 # ========================== LaTeX Formatted Tables ==========================
 
-print(f"\n{'LaTeX formatted tables':-^61}\n")
 rowEnd = r" \\" + "\n"
 concentration = ["kmol", "per", "m", "cubed"]
 area = ["m", "squared"]
@@ -340,35 +341,40 @@ def SI(value, *units, style="2f"):
         return "\\num{"+formattedValue+"}"
 
 
-print(f"{'Variable':^17} & {'Value':^16}", end=rowEnd)
-print(r"\midrule")
-print(f"{'Mach Number':>17} & {M4:>16.2f}", end=rowEnd)
-print(f"{'Temperature':>17} & {SI(T4, 'K'):>16}", end=rowEnd)
-print(f"{'Pressure':>17} & {SI(kPa(P4), 'kPa'):>16}", end=rowEnd)
-print(f"{'Total Temperature':>17} & {SI(Tt4, 'K'):>16}", end=rowEnd)
-# print(f"{'Total Pressure':>17} & {SI(kPa(Pt4), 'K'):>16}", end=rowEnd)
-print(r"\bottomrule""\n")
+lines = [
+    f"{'Variable':^17} & {'Value':^16}",               rowEnd,
+    r"\midrule",                                      "\n",
+    f"{'Mach Number':>17} & {M4:>16.2f}",              rowEnd,
+    f"{'Temperature':>17} & {SI(T4, 'K'):>16}",        rowEnd,
+    f"{'Pressure':>17} & {SI(kPa(P4), 'kPa'):>16}",    rowEnd,
+    f"{'Total Temperature':>17} & {SI(Tt4, 'K'):>16}", rowEnd,
+    r"\bottomrule",                                   "\n",
+    "\n",
+    f"{'Variable':^11} & {'Value':^21}",               rowEnd,
+    r"\midrule",                                      "\n",
+    f"{'Mach Number':>11} & {M10:>21.2f}",             rowEnd,
+    f"{'Temperature':>11} & {SI(T10_, 'K'):>21}",      rowEnd,
+    f"{'Pressure':>11} & {SI(kPa(P10), 'kPa'):>21}",   rowEnd,
+    f"{'Exit Area':>11} & {SI(A10, *area):>21}",       rowEnd,
+    f"{'Thrust':>11} & {SI(thrust, 'N'):>21}",         rowEnd,
+    r"\bottomrule",                                   "\n",
+    "\n"
+]
 
-print(f"{'Variable':^11} & {'Value':^21}", end=rowEnd)
-print(r"\midrule")
-print(f"{'Mach Number':>11} & {M10:>21.2f}", end=rowEnd)
-# print(f"{'Temperature':>11} & {SI(T10, 'K'):>21}", end=rowEnd)
-print(f"{'Pressure':>11} & {SI(kPa(P10), 'kPa'):>21}", end=rowEnd)
-print(f"{'Exit Area':>11} & {SI(A10, *area):>21}", end=rowEnd)
-# print(f"{'Area Ratio':>11} & {SI(A10onA4):>21}", end=rowEnd)
-print(f"{'Thrust':>11} & {SI(thrust, 'N'):>21}", end=rowEnd)
-print(r"\bottomrule""\n")
+with open("code/LaTeX.txt", "w") as output:
+    for line in lines:
+        output.write(line)
 
-print(f"  Species & {'Concentration':^31} & {'Mass Fraction':^24}", end=rowEnd)
-print(r"\midrule")
-for s, Xs, Ys in zip(allSpecies, X4, Y4):
-    print(
-        r"\ce{"f"{s:>4}"r"}",
-        "&", SI(abs(Xs), *concentration, style="5f"),
-        "&", SI(abs(Ys), "kg", "per", "kg", style="5f"),
-        end=rowEnd
-    )
-print(r"\bottomrule""\n")
+    output.write(f"  Species & {'Concentration':^31} & {'Mass Fraction':^24}")
+    output.write(rowEnd)
+
+    output.write(r"\midrule" + "\n")
+    for s, Xs, Ys in zip(allSpecies, X4, Y4):
+        output.write(r"\ce{"f"{s:>4}"r"}")
+        output.write(" & " + SI(abs(Xs), *concentration, style="5f"))
+        output.write(" & " + SI(abs(Ys), "kg", "per", "kg", style="5f"))
+        output.write(rowEnd)
+    output.write(r"\bottomrule" + "\n")
 
 
 # =================================== Plots ===================================
