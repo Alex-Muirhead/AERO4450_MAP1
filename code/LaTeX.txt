@@ -1,26 +1,26 @@
     Variable      &      Value       \\
 \midrule
-      Mach Number &             2.69 \\
-      Temperature & \SI{3013.92}{\K} \\
-         Pressure & \SI{36.66}{\kPa} \\
-Total Temperature & \SI{6518.62}{\K} \\
+      Mach Number &             2.82 \\
+      Temperature & \SI{2925.27}{\K} \\
+         Pressure & \SI{34.27}{\kPa} \\
+Total Temperature & \SI{6649.83}{\K} \\
 \bottomrule
 
  Variable   &         Value         \\
 \midrule
-Mach Number &                  3.75 \\
-Temperature &      \SI{1512.89}{\K} \\
+Mach Number &                  3.82 \\
+Temperature &      \SI{1492.64}{\K} \\
    Pressure &       \SI{2.14}{\kPa} \\
-  Exit Area & \SI{2.56}{\m\squared} \\
-     Thrust &     \SI{13106.25}{\N} \\
+  Exit Area & \SI{2.51}{\m\squared} \\
+     Thrust &     \SI{14573.61}{\N} \\
 \bottomrule
 
   Species &          Concentration          &      Mass Fraction       \\
 \midrule
 \ce{C2H4} & \SI{0.00000}{\kmol\per\m\cubed} & \SI{0.00000}{\kg\per\kg} \\
-\ce{  O2} & \SI{0.00024}{\kmol\per\m\cubed} & \SI{0.04317}{\kg\per\kg} \\
-\ce{  CO} & \SI{0.00047}{\kmol\per\m\cubed} & \SI{0.07558}{\kg\per\kg} \\
-\ce{ H2O} & \SI{0.00080}{\kmol\per\m\cubed} & \SI{0.08188}{\kg\per\kg} \\
-\ce{ CO2} & \SI{0.00032}{\kmol\per\m\cubed} & \SI{0.08127}{\kg\per\kg} \\
-\ce{  N2} & \SI{0.00451}{\kmol\per\m\cubed} & \SI{0.71810}{\kg\per\kg} \\
+\ce{  O2} & \SI{0.00021}{\kmol\per\m\cubed} & \SI{0.03876}{\kg\per\kg} \\
+\ce{  CO} & \SI{0.00042}{\kmol\per\m\cubed} & \SI{0.06786}{\kg\per\kg} \\
+\ce{ H2O} & \SI{0.00079}{\kmol\per\m\cubed} & \SI{0.08188}{\kg\per\kg} \\
+\ce{ CO2} & \SI{0.00037}{\kmol\per\m\cubed} & \SI{0.09340}{\kg\per\kg} \\
+\ce{  N2} & \SI{0.00445}{\kmol\per\m\cubed} & \SI{0.71810}{\kg\per\kg} \\
 \bottomrule
