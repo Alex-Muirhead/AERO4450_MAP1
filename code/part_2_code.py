@@ -4,33 +4,40 @@ Authors: Alex Muirhead and Robert Watt
 Purpose: Simulate the combustion and calculate thrust produced by a scramjet
 """
 
+from math import sqrt
+
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy import interpolate
 from scipy import integrate
 import pandas as pd
 
-plt.style.use("code/PaperDoubleFig.mplstyle")
+plt.style.use("PaperDoubleFig.mplstyle")
 
 
-# --------------------------- Universal constants ----------------------------
+# ---------------------------- Universal constants ----------------------------
 
 Ru = 8.314                             # Universal gas constant [J/mol/K]
 pRef = 101.3                           # reference pressure [kPa]
 
-# ------------------------- Combuster gas properties -------------------------
+# ------------------------- Combuster gas properties --------------------------
 
 yb  = 1.3205                           # gamma
 Rb  = 288.45                           # Gas constant [J/kg/K]
 cpb = Rb * yb/(yb-1) / 1000            # J/g/K specific heat constant pressure
 
-# ------------------------ Combuster inlet properties ------------------------
+# ------------------------ Combuster inlet properties -------------------------
 
 M3b  = 3.814                           # mach number
 p3b  = 70.09                           # static pressure [kPa]
 T3b  = 1237.63                         # temperature [K]
+<<<<<<< HEAD
 T3b  = 1400
 Tt3b = T3b * (1 + 0.5*(yb-1) * M3b**2) # stagnation temperature
+=======
+T3b  = 1380
+Tt3b = T3b * (1 + 0.5*(yb-1) * M3b**2)   # stagnation temperature
+>>>>>>> 472a7740ca8b09b6152b1b687d429c7295e43e28
 # combined mass flow rate of stoichiometric mixture of ethylene and air [kg/s]
 mdot = 31.1186
 rho3b = p3b * 1e3 / (Rb * T3b)         # kg/m^3
@@ -38,22 +45,22 @@ V3b = M3b * np.sqrt(yb * Rb * T3b)     # m/s
 A3 = mdot / (rho3b*V3b)                # m^2
 
 
-# --------------------- Combustor Calculations ---------------------------
+# -------------------------- Combustor Calculations ---------------------------
 
 # calculate initial concentrations
 n = 1 + 3*(1 + 3.76)
-MW = np.array([28, 32, 28, 18, 44])    # kg/kmol
+mWeights = np.array([28, 32, 28, 18, 44])    # kg/kmol
 X3 = np.array(
     [1/n, 3/n, 0.0, 0.0, 0.0]
 ) * p3b / (Ru * T3b)
 
 # calculate mass fraction of N2 at inlet
 X_N2 = (3 * 3.76 / n) * p3b / (Ru * T3b)
-YN2 = X_N2 * 28 / (np.sum(X3 * MW) + X_N2 * 28)
+massFractionNitrogen = X_N2 * 28 / (np.sum(X3 * mWeights) + X_N2 * 28)
 
-# --------------------------- Combustor properties ---------------------------
+# --------------------------- Combustor properties ----------------------------
 
-combustor_length = 0.5                 # m
+combustorLength = 0.5                 # m
 Cf = 0.002                             # skin friction coefficient
 
 
@@ -68,13 +75,19 @@ def dAonA(x, A3, length=0.5):
     return 3 * A3 / (length * A(x, A3))
 
 
-def vectorInterface(lengths):
+def vectorInterface(argLengths):
     """Decorator to re-order vector into multiple variables."""
-    L = [0, *np.cumsum(lengths)]
+    start, slices = 0, []
+    for length in argLengths:
+        if length == 1:
+            slices.append(start)
+        else:
+            slices.append(slice(start, start+length))
+        start += length
 
     def wrapper(func):
         def inner(t, args):
-            splitArgs = [args[l:r] for l, r in zip(L[:-1], L[1:])]
+            splitArgs = [args[s] for s in slices]
             output = func(t, *splitArgs)
             return np.hstack([*output])
         return inner
@@ -118,15 +131,14 @@ maskF[0, (0, 1)] = True  # {C2H4,  O2}
 maskR[0, (2, 3)] = True  # {CO, H2O}
 
 maskF[1, (1, 2)] = True  # {CO, O2}
-maskR[1, (4)] = True  # {CO2}
+maskR[1, (4)]    = True  # {CO2}
 
 
-# --------------------------- Import Chemical Data ---------------------------
-
+# --------------------------- Import Chemical Data ----------------------------
 
 chemData = []
 for species in ("C2H4", "O2", "CO", "H2O", "CO2"):
-    data = pd.read_csv(f"code/chemData/{species}.txt", sep="\t", skiprows=1)
+    data = pd.read_csv(f"chemData/{species}.txt", sep="\t", skiprows=1)
     chemData.append(data[1:])  # Skip T=0K
 
 logKfuncs, deltaHfuncs = [], []
@@ -139,23 +151,7 @@ for data in chemData:
     deltaHfuncs.append(interpolate.interp1d(T, deltaH, kind="quadratic"))
 
 
-def dTtdx(X, M, Tt, x, T):
-    """Calculate spatial gradient of total temperature."""
-    h0f = np.array([deltaHfuncs[i](T) for i in range(5)])  # kJ/kmol
-    h0f = h0f / MW  # kJ/kg
-    temp_gradient = -1/cpb * np.sum(dYdx(X, M, Tt, x, T) * h0f)
-    return temp_gradient
-
-
-def dM2(M, X, x, Tt, T):
-    """Calculate spatial derivative of the square of the mach number"""
-    Deff = 2 * np.sqrt(A(x, A3) / np.pi)
-    return M**2 * ((1 + 0.5*(yb - 1)*M**2) / (1 - M**2)) * (
-        -2 * dAonA(x, A3)  # area change
-        + (1 + yb*M**2)*dTtdx(X, M, Tt, x, T)/Tt  # total temperature change
-        + yb*M**2 * 4 * Cf / Deff  # friction
-    )
-
+# ---------------------- Define Reaction Rate Functions -----------------------
 
 def arrhenius(T):
     return np.array([
@@ -167,71 +163,85 @@ def arrhenius(T):
 def Kc(T):
     """Kc = Kp * pow(pRef/p, ν+...)"""
     # NOTE: Account for partial pressures
-    Kf_i = np.array([pow(10, f(np.float64(T))) for f in logKfuncs])/(Ru*T/pRef)
+    Kf_i = np.array([pow(10, f(T)) for f in logKfuncs])/(Ru*T/pRef)
     forward = pow(Kf_i, maskF*ν)
     reverse = pow(Kf_i, maskR*ν)
     return np.prod(reverse, axis=1) / np.prod(forward, axis=1)
 
 
-def concentration_gradient(χ, M, Tt, T):
-    """Return the gradient of the concentrations in time."""
-    limit = (χ < 0)
-    χ[limit] = 0
+# --------------------- Define Spatial Gradient Functions ---------------------
+
+def concentrationGradient(X, M, T):
+    """Return the gradient of the concentrations in space."""
+    limit = (X < 0)
+    X[limit] = 0
 
     kf = arrhenius(T)
     kr = kf / Kc(T)
     kr[0] = 0  # One way reaction
 
-    forward = kf * np.prod(pow(χ, maskF*ν), axis=1)
-    reverse = kr * np.prod(pow(χ, maskR*ν), axis=1)
-    χGrad = μ.T @ forward - μ.T @ reverse
+    forward = kf * np.prod(pow(X, maskF*ν), axis=1)
+    reverse = kr * np.prod(pow(X, maskR*ν), axis=1)
+    XRate = μ.T @ forward - μ.T @ reverse
 
-    χGrad[(χGrad < 0)*limit] = 0
-    return χGrad
+    XRate[(XRate < 0)*limit] = 0
 
-
-# ---------- Calculate the spatial derivative of the concentrations ----------
-
-def dXdx(M, Tt, X, T):
-    """Rate of change of concentration w.r.t space."""
-    v = M * np.sqrt(yb * Rb * T)
-    return concentration_gradient(X, M, Tt, T) / v
+    XGrad = XRate / (M*sqrt(yb*Rb*T))
+    return XGrad
 
 
-def dYdx(X, M, Tt, x, T):
+def massFractionGradient(X, dXdx):
     """Rate of change of mass fraction w.r.t space."""
-    reacting_sum = np.sum(X * MW)
-    return MW * (1 - YN2) * (
-        dXdx(M, Tt, X, T)/reacting_sum
-        - X * np.sum(MW * dXdx(M, Tt, X, T)) / reacting_sum**2
+    avgMWeight = np.sum(X*mWeights)
+    return mWeights * (1 - massFractionNitrogen) * (
+        dXdx / avgMWeight - X*np.sum(dXdx*mWeights) / avgMWeight**2
+    )
+
+
+def totalTempGradient(T, dYdx):
+    """Calculate spatial gradient of total temperature."""
+    deltaHForm = np.array([deltaHf(T) for deltaHf in deltaHfuncs])  # kJ/kmol
+    hGrad = -np.sum(dYdx*deltaHForm/mWeights)
+    return hGrad / cpb
+
+
+def machGradient(x, M, Tt, dTtdx):
+    """Calculate spatial derivative of the square of the mach number"""
+    Deff = 2 * np.sqrt(A(x, A3) / np.pi)
+    return M**2 * ((1 + 0.5*(yb-1)*M**2) / (1 - M**2)) * (
+        -2 * dAonA(x, A3)  # area change
+        + (1 + yb*M**2)*dTtdx/Tt  # total temperature change
+        + yb*M**2 * 4 * Cf / Deff  # friction
     )
 
 
 @vectorInterface((5, 1, 1))
 def gradient(x, X, Tt, M2):
     """Return the gradient of all variables in a single vector"""
-    x = np.float64(x)
-    Tt = np.float64(Tt)
-    M = np.sqrt(np.float64(M2))
+    M = np.sqrt(M2)
     T = Tt * (1 + 0.5*(yb - 1) * M**2)**(-1)
-    return dXdx(M, Tt, X, T), dTtdx(X, M, Tt, x, T), dM2(M, X, x, Tt, T)
+    dXdx  = concentrationGradient(X, M, T)
+    dYdx  = massFractionGradient(X, dXdx)
+    dTtdx = totalTempGradient(T, dYdx)
+    dM2dx = machGradient(x, M, Tt, dTtdx)
+    return dXdx, dTtdx, dM2dx
 
 
 def massFraction(X):
     """Convert concentration into mass fraction"""
-    Y = X * MW / np.sum(X*MW) * (1 - YN2)
-    if 0.999 > np.sum(Y) + YN2 or np.sum(Y) + YN2 > 1.001:
-        print("total mass fraction = ", np.sum(Y) + YN2)
+    Y = X * mWeights / np.sum(X*mWeights) * (1 - massFractionNitrogen)
+    if abs(np.sum(Y) + massFractionNitrogen - 1) > 0.001:
+        print("total mass fraction = ", np.sum(Y) + massFractionNitrogen)
     return Y
 
 
 # create initial conditions vector
-init_conds = np.append(X3, [Tt3b, M3b**2])
+inititalConditions = np.append(X3, [Tt3b, M3b**2])
 
 # integrate IV
 sol = integrate.solve_ivp(
-    gradient, (0, combustor_length),
-    init_conds,
+    gradient, (0, combustorLength),
+    inititalConditions,
     method="LSODA",
     atol=1e-10, rtol=1e-10
 )
@@ -269,10 +279,12 @@ def AonAstar(M):
     b = 1 + 0.5*(yb - 1) * M**2
     return a**(-power) * b**power / M
 
+
 def A10onA0(M0, M10, P0, P10):
     return P0 * M0 / (P10 * M10) * np.sqrt(1.4 * 287 * 220) / np.sqrt(yb * Rb * T10_dash)
 
 # Sam's thrust 42.2 kN
+
 
 # Note there is an error in calculating something here
 v0 = 10 * np.sqrt(1.4 * 287 * 220)
@@ -287,7 +299,7 @@ v10_dash = M10_dash * np.sqrt(yb * Rb * T10_dash)
 v10 = 0.95 * v10_dash
 M10 = v10 / np.sqrt(yb * Rb * T10_dash)
 A0 = mdot / (rho0 * v0)
-A10 =  A0 * (P0 * 10 / (P10 * M10_dash) * np.sqrt(1.4 * Rb * T10_dash / ( yb * 287 * 220 )))
+A10 = A0 * (P0 * 10 / (P10 * M10_dash) * np.sqrt(1.4 * Rb * T10_dash / ( yb * 287 * 220 )))
 
 
 # Calculate performance of scramjet
@@ -307,7 +319,7 @@ print(f"{'Mach Number':>30} & {M4:.2f}")
 print(f"{'Temperature':>30} & {T4:.2f} K")
 print(f"{'Pressure':>30} & {kPa(P4):.2f} kPa")
 print(f"{'Total Temperature':>30} & {Tt4:.2f} K")
-print(f"{'Total Pressure':>30} & {kPa(Pt4):.2f} kPa")
+# print(f"{'Total Pressure':>30} & {kPa(Pt4):.2f} kPa")
 
 print("")
 for species, Xs, Ys in zip(("C2H4", "O2", "CO", "H2O", "CO2"), X4, Y4):
@@ -321,7 +333,7 @@ print(f"{'Mach Number':>30} = {M10:.2f}")
 print(f"{'Temperature':>30} = {T4:.2f} K")
 print(f"{'Pressure':>30} = {kPa(P4):.2f} kPa")
 print(f"{'Exit Area':>30} = {A10:.2f} m^2")
-print(f"{'Area Ratio':>30} = {A10onA4:.2f}")
+# print(f"{'Area Ratio':>30} = {A10onA4:.2f}")
 print(f"{'Thrust':>30} = {thrust:.2f} N")
 
 
@@ -348,16 +360,16 @@ print(f"{'Mach Number':>17} & {M4:>16.2f}", end=rowEnd)
 print(f"{'Temperature':>17} & {SI(T4, 'K'):>16}", end=rowEnd)
 print(f"{'Pressure':>17} & {SI(kPa(P4), 'kPa'):>16}", end=rowEnd)
 print(f"{'Total Temperature':>17} & {SI(Tt4, 'K'):>16}", end=rowEnd)
-print(f"{'Total Pressure':>17} & {SI(kPa(Pt4), 'K'):>16}", end=rowEnd)
+# print(f"{'Total Pressure':>17} & {SI(kPa(Pt4), 'K'):>16}", end=rowEnd)
 print(r"\bottomrule""\n")
 
 print(f"{'Variable':^11} & {'Value':^21}", end=rowEnd)
 print(r"\midrule")
 print(f"{'Mach Number':>11} & {M10:>21.2f}", end=rowEnd)
-print(f"{'Temperature':>11} & {SI(T10, 'K'):>21}", end=rowEnd)
+# print(f"{'Temperature':>11} & {SI(T10, 'K'):>21}", end=rowEnd)
 print(f"{'Pressure':>11} & {SI(kPa(P10), 'kPa'):>21}", end=rowEnd)
 print(f"{'Exit Area':>11} & {SI(A10, *area):>21}", end=rowEnd)
-print(f"{'Area Ratio':>11} & {SI(A10onA4):>21}", end=rowEnd)
+# print(f"{'Area Ratio':>11} & {SI(A10onA4):>21}", end=rowEnd)
 print(f"{'Thrust':>11} & {SI(thrust, 'N'):>21}", end=rowEnd)
 print(r"\bottomrule""\n")
 
@@ -427,4 +439,4 @@ plt.title(f"Pressure over combustion at $T_{loc}$ = {T3b} K")
 ax.legend()
 plt.grid()
 
-#plt.show()
+plt.show()
