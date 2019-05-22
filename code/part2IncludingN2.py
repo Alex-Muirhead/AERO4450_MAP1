@@ -11,7 +11,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from scipy import integrate, interpolate
 
-plt.style.use("code/PaperDoubleFig.mplstyle")
+plt.style.use("PaperDoubleFig.mplstyle")
 
 
 def vectorInterface(argLengths):
@@ -83,7 +83,7 @@ beta  = maskR * nuExp
 
 allSpecies, chemData = ("C2H4", "O2", "CO", "H2O", "CO2", "N2"), []
 for species in allSpecies:
-    data = pd.read_csv(f"code/chemData/{species}.txt", sep="\t", skiprows=1)
+    data = pd.read_csv(f"chemData/{species}.txt", sep="\t", skiprows=1)
     chemData.append(data[1:])  # Skip T=0K
 
 logKfuncs, deltaHfuncs = [], []
@@ -200,7 +200,7 @@ cp = R * k/(k-1) / 1000                # J/g/K specific heat constant pressure
 
 M3b  = 3.814                           # mach number
 p3b  = 70.09                           # static pressure [kPa]
-T3b  = 1400                            # temperature [K]
+T3b  = 1237.63                         # temperature [K]
 Tt3b = T3b * (1 + 0.5*(k-1) * M3b**2)  # stagnation temperature
 # combined mass flow rate of stoichiometric mixture of ethylene and air [kg/s]
 mdot  = 31.1186
