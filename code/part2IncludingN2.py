@@ -273,8 +273,8 @@ P4  = P[-1]
 
 # ------------------------------- Nozzle solver -------------------------------
 
-fuelRatio = Y[0, 0] / sum(Y[0, :])
-mdotAir = mdot * (1 - fuelRatio)
+fueltoAirRatio = Y[0, 0] / sum(Y[1:, 0])
+mdotAir = mdot / (1 + fueltoAirRatio)
 
 # Note there is an error in calculating something here
 q0   = 50e+03
@@ -319,6 +319,7 @@ print(f"{'Mach Number':>25} = {M0:.2f}")
 print(f"{'Temperature':>25} = {T0:.2f} K")
 print(f"{'Pressure':>25} = {kPa(P0):.2f} kPa")
 print(f"{'Inlet Area':>25} = {A0:.2f} m^2")
+print(f"{'Fuel to Air Ratio':>25} = {fueltoAirRatio:.2e}")
 
 print(f"\n{' Combustor Exit Conditions ':-^53}\n")
 print(f"{'Mach Number':>25} = {M4:.2f}")
