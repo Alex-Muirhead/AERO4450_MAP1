@@ -27,7 +27,9 @@
 
 \newpage
 
-
+\tableofcontents
+\pagenumbering{roman}
+\newpage
 \section*{Nomenclature}
 
 \begin{table}[H]
@@ -69,20 +71,25 @@
               4 & combustor outlet state\\
               10 & nozzle exit state\\
               \(i\) & an individual species \\
+              \(b\) & burner, used for fuel-air mixtures\\
         \bottomrule 
     \end{tabu}
     \caption{Subscripts}
     %\label{tab:freestream values}
 \end{table}
 
-\pagenumbering{roman}
-
-
 \newpage
 \pagenumbering{arabic}
 
 \section{Introduction}
-The University of Queensland and our partners are developing a 3-stage, 93\% reusable, partially air-breathing small satellite launch system known as \textsc{Spartan} (Scramjet Powered Accelerator for Reusable Technology AdvaNcement). The \textsc{Spartan} mission profile is shown in figure 1. A rocket powered \nth{1} stage accelerates the vehicle stack to the minimum operating Mach number of the scramjet powered second stage (Mach 5). The \nth{1} stage is then jettisoned and returns to base, and the scramjet accelerates the remainder of the vehicle to the scramjet cut-off Mach number of 10. A rocket powered \nth{3} stage then separates from the second stage and accelerates the payload to orbit, while the second stage flies back to base.
+The University of Queensland and our partners are developing a 3-stage, 93\% reusable, partially air-breathing small satellite launch system known as \textsc{Spartan} (Scramjet Powered Accelerator for Reusable Technology AdvaNcement). The \textsc{Spartan} mission profile is shown in Fig.~\ref{fig:mission_profile}. A rocket powered \nth{1} stage accelerates the vehicle stack to the minimum operating Mach number of the scramjet powered second stage (Mach 5). The \nth{1} stage is then jettisoned and returns to base, and the scramjet accelerates the remainder of the vehicle to the scramjet cut-off Mach number of 10. A rocket powered \nth{3} stage then separates from the second stage and accelerates the payload to orbit, while the second stage flies back to base.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{part_2_img/spartan_overview.png}
+    \caption{\textsc{SPARTAN} mission profile}
+    \label{fig:mission_profile}
+\end{figure}
 
 The present \textsc{Spartan} design requires the second stage be fuelled with liquid hydrogen, since it is the most energetic fuel and gives the best propulsive performance. Even in its liquid form, however, hydrogen has low density and it is marginal whether the fuel tanks and required flight systems can be successfully packaged within the vehicle (this means it is possible, but even a small change in e. g. required wall thickness could cause the available volume to be insufficient). Furthermore, liquid hydrogen infrastructure is available at only a small subset of potential launch sites, which would greatly restrict where \textsc{Spartan} could be deployed. Both of these issues would be overcome if it was possible to fuel the scramjet with a denser hydrocarbon fuel, but this is challenging at high Mach numbers as hydrocarbon fuels have longer ignition and reaction times, and are less energetic. For this reason, the most promising hydrocarbon fuel for \textsc{Spartan} is ethylene (\(\ce{C2H4}\)) as it is the fastest reacting. UQ has had recent successes in experiments of supersonic combustion of ethylene in scramjet at Mach 8 [1, 2], but it is unknown if net thrust can be generated using ethylene fuel at Mach 10, where the time available for ignition and combustion is least. We would like you to be the engineering consultants who investigate this issue.
 
@@ -154,7 +161,7 @@ This density can then be used to calculate the pressure at each point in the com
     P(x) = \rho(x) R T(x)
 \end{align}
 
-\subsection{Nozzle Modelling}
+\subsection{Nozzle Modelling}\label{subsec:nozzle_modelling}
 The flow within the nozzle is assumed to isentropically expand from the combustor exit pressure to \(3P_0\). Losses within the nozzle are then quantified by assuming a velocity coefficient of 0.95. Using isentropic flow relations, it can be shown that the Mach number of the exhaust is given by Eq.~\ref{eqn:exhaust_mach}. Note that primed states refer to the ideal exhaust state, before nozzle losses have been accounted for.
 
 \begin{align}\label{eqn:exhaust_mach}
@@ -178,7 +185,7 @@ With the actual exhaust velocity known, the actual exhaust temperature and Mach 
     M_{10} &= \frac{v_{10}}{\sqrt{\gamma_b R_b T_{10}}} \label{eqn:M10}
 \end{align}
 
-The density of the exhaust can calculated using the ideal gas law applied to nozzle exit.
+The density of the exhaust can calculated using the ideal gas law applied to the nozzle exit.
 
 \begin{align}
     \rho_{10} = \frac{P_{10}}{R_b  T_{10}}
@@ -344,7 +351,7 @@ Thus the four engines provide net thrust to the second stage of the \textsc{Spar
 
 \newpage
 \appendix
-\section{Plots}\label{app:other_plots}
+\section{Plots for other temperatures}\label{app:other_plots}
 \begin{widefigure}[20mm]
     \centering
     % \begin{subfigure}[h]{0.49\linewidth}
