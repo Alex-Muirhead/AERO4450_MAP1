@@ -33,11 +33,13 @@
     multi-part-units=single
 ]{siunitx}
 \sisetup{separate-uncertainty}
+\usepackage[super]{nth}                % \nth{1} = 1\textsuperscript{st}
 \usepackage[version=4]{mhchem}         % Chemical equations -> e.g. \ch{H20}
 \usepackage{bm}                        % Bold maths symbols -> e.g. \bm{\alpha}
 \usepackage{xfrac}                     % Use \sfrac{}{} for slanted fractions
 \usepackage{esint}                     % Gives nicer integration symbols
 \usepackage{cancel}                    % Gives \cancelto{val}{var}
+\numberwithin{equation}{section}
 
 %% ------------------------------ Maths commands ------------------------------
 
