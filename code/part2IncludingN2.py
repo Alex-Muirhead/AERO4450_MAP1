@@ -11,7 +11,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from scipy import integrate, interpolate
 
-plt.style.use("PaperDoubleFig.mplstyle")
+plt.style.use("code/PaperDoubleFig.mplstyle")
 
 
 def vectorInterface(argLengths):
@@ -83,7 +83,7 @@ beta  = maskR * nuExp
 
 allSpecies, chemData = ("C2H4", "O2", "CO", "H2O", "CO2", "N2"), []
 for species in allSpecies:
-    data = pd.read_csv(f"chemData/{species}.txt", sep="\t", skiprows=1)
+    data = pd.read_csv(f"code/chemData/{species}.txt", sep="\t", skiprows=1)
     chemData.append(data[1:])  # Skip T=0K
 
 logKfuncs, deltaHfuncs = [], []
@@ -200,8 +200,7 @@ cp = R * k/(k-1) / 1000                # J/g/K specific heat constant pressure
 
 M3b  = 3.814                           # mach number
 p3b  = 70.09                           # static pressure [kPa]
-T3b  = 1237.63                         # temperature [K]
-T3b  = 1400
+T3b  = 1400                            # temperature [K]
 Tt3b = T3b * (1 + 0.5*(k-1) * M3b**2)  # stagnation temperature
 # combined mass flow rate of stoichiometric mixture of ethylene and air [kg/s]
 mdot  = 31.1186
@@ -410,60 +409,52 @@ else:
     temp_label = round(T3b)
 
 loc = "{3b}"
-fig, ax = plt.subplots()
 formula = ("C$_2$H$_4$", "O$_2$", "CO", "H$_2$O", "CO$_2$", "N$_2$")
-[ax.plot(x, X[i]*1e+03, label=formula[i]) for i in range(5)]
-ax.legend()
-plt.xlabel("distance along combustor [m]")
-plt.ylabel("Concentration [kmol/m$^3$]")
-plt.title(f"concentration over combustion at $T_{loc}$ = {T3b} K")
-plt.grid()
-plt.savefig(f"../part_2_img/concentration_{temp_label}.pdf")
 
-fig, ax = plt.subplots()
-[ax.plot(x, Y[i], label=formula[i]) for i in range(5)]
-ax.legend()
-plt.xlabel("distance along combustor [m]")
-plt.ylabel("Mass fraction")
-plt.title(f"Mass fraction over combustion at $T_{loc}$ = {T3b} K")
-plt.grid()
-plt.savefig(f"../part_2_img/mass_fraction_{temp_label}.pdf")
+fig, axes = plt.subplots(2, 2, sharex=True, figsize=(14, 9))
 
-fig, ax = plt.subplots()
-ax.plot(x, Tt, label="Tt")
-ax.plot(x, [1.15*Tt3b for i in x], label="Ignition temperature")
-plt.xlabel("distance along combustor [m]")
-plt.ylabel("$T_0$ [K]")
-plt.title(f"Stagnation temperature over combustion at $T_{loc}$ = {T3b} K")
-ax.legend()
-plt.grid()
-plt.savefig(f"../part_2_img/stag_temp_{temp_label}.pdf")
+[axes[0, 0].plot(x, X[i]*1e+03, label=formula[i]) for i in range(5)]
+axes[0, 0].legend()
+axes[0, 0].set_ylabel("Concentration [mol/m$^3$]")
+axes[0, 0].set_title(f"Species concentrations over combustor")
+axes[0, 0].grid()
 
-fig, ax = plt.subplots()
-ax.plot(x, T, label="T")
-plt.xlabel("distance along combustor [m]")
-plt.ylabel("T [K]")
-ax.legend()
-plt.title(f"Static temperature over combustion at $T_{loc}$ = {T3b} K")
-plt.grid()
-plt.savefig(f"../part_2_img/static_temp_{temp_label}.pdf")
+# fig, ax = plt.subplots()
+# [ax.plot(x, Y[i], label=formula[i]) for i in range(5)]
+# ax.legend()
+# plt.xlabel("distance along combustor [m]")
+# plt.ylabel("Mass fraction")
+# plt.title(f"Mass fraction over combustion at $T_{loc}$ = {T3b} K")
+# plt.grid()
+# plt.savefig(f"../part_2_img/mass_fraction_{temp_label}.pdf")
 
-fig, ax = plt.subplots()
-ax.plot(x, M, label="M")
-plt.xlabel("distance along combustor [m]")
-plt.ylabel("M")
-plt.title(f"Mach number over combustion at $T_{loc}$ = {T3b} K")
-ax.legend()
-plt.grid()
-plt.savefig(f"../part_2_img/mach_{temp_label}.pdf")
+axes[0, 1].plot(x, M, label="Mach Number")
+axes[0, 1].set_ylabel("M")
+axes[0, 1].set_title(f"Mach number over combustor")
+axes[0, 1].legend()
+axes[0, 1].grid()
 
-fig, ax = plt.subplots()
-ax.plot(x, kPa(P), label="pressure")
-plt.xlabel("distance along combustor [m]")
-plt.ylabel("Pressure [kPa]")
-plt.title(f"Pressure over combustion at $T_{loc}$ = {T3b} K")
-ax.legend()
-plt.grid()
-plt.savefig(f"../part_2_img/pressure_{temp_label}.pdf")
+lineT = axes[1, 0].plot(x, T, label="Temperature")
+axes[1, 0].set_xlabel("Distance along combustor [m]")
+axes[1, 0].set_xlim([0, 0.5])
+axes[1, 0].set_ylabel("T [K]")
+axes[1, 0].set_title(f"Static temperature and pressure over combustor")
+pAxis = axes[1, 0].twinx()
+lineP = pAxis.plot(x, kPa(P), label="Pressure", color="tab:orange")
+pAxis.set_ylabel("P [kPa]")
+axes[1, 0].grid()
+lines = lineT + lineP
+axes[1, 0].legend(lines, [line.get_label() for line in lines])
+
+axes[1, 1].plot(x, Tt, label="Stagnation Temperature")
+axes[1, 1].plot(x, [1.15*Tt3b for i in x], label="Ignition temperature")
+axes[1, 1].set_xlabel("Distance along combustor [m]")
+axes[1, 0].set_xlim([0, 0.5])
+axes[1, 1].set_ylabel("$T_0$ [K]")
+axes[1, 1].set_title(f"Stagnation temperature over combustor")
+axes[1, 1].legend()
+axes[1, 1].grid()
+
+plt.savefig(f"part_2_img/subfig_{temp_label}.pdf")
 
 plt.show()
