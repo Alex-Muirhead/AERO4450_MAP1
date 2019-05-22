@@ -11,7 +11,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from scipy import integrate, interpolate
 
-plt.style.use("code/PaperDoubleFig.mplstyle")
+plt.style.use("PaperDoubleFig.mplstyle")
 
 
 def vectorInterface(argLengths):
@@ -83,7 +83,7 @@ beta  = maskR * nuExp
 
 allSpecies, chemData = ("C2H4", "O2", "CO", "H2O", "CO2", "N2"), []
 for species in allSpecies:
-    data = pd.read_csv(f"code/chemData/{species}.txt", sep="\t", skiprows=1)
+    data = pd.read_csv(f"chemData/{species}.txt", sep="\t", skiprows=1)
     chemData.append(data[1:])  # Skip T=0K
 
 logKfuncs, deltaHfuncs = [], []
@@ -152,7 +152,6 @@ def massFractionGradient(X, dXdx):
         dXdx / avgMWeight - X*np.sum(dXdx*mWeights) / avgMWeight**2
     )
 
-
 def totalTempGradient(T, dYdx):
     """Calculate spatial gradient of total temperature."""
     deltaHForm = np.array([deltaHf(T) for deltaHf in deltaHfuncs])  # kJ/kmol
@@ -200,7 +199,8 @@ cp = R * k/(k-1) / 1000                # J/g/K specific heat constant pressure
 
 M3b  = 3.814                           # mach number
 p3b  = 70.09                           # static pressure [kPa]
-T3b  = 1400                            # temperature [K]
+T3b  = 1400          
+#T3b = 1237.63                # temperature [K]
 Tt3b = T3b * (1 + 0.5*(k-1) * M3b**2)  # stagnation temperature
 # combined mass flow rate of stoichiometric mixture of ethylene and air [kg/s]
 mdot  = 31.1186
@@ -212,6 +212,10 @@ A3    = mdot / (rho3b*V3b)             # m^2
 
 # calculate initial concentrations
 n = 1 + 3*(1 + 3.76)
+X3 = np.array(
+    [1/n, 3/n, 0.0, 0.0, 0.0, 3*3.76/n]
+) * p3b / (Ru * T3b)
+
 mWeights = np.array([
     28.054,  # C2H4
     31.998,  # O2
@@ -220,9 +224,6 @@ mWeights = np.array([
     44.009,  # CO2
     28.014   # N2
 ])           # kg/kmol
-X3 = np.array(
-    [1/n, 3/n, 0.0, 0.0, 0.0, 3*3.76/n]
-) * p3b / (Ru * T3b)
 
 # --------------------------- Combustor properties ----------------------------
 
@@ -270,13 +271,14 @@ M4  = M[-1]
 T4  = T[-1]
 P4  = P[-1]
 
+fuelFractionBurned = 1 - Y[0, -1]/Y[0, 0]
+
 
 # ------------------------------- Nozzle solver -------------------------------
 
 fuelRatio = Y[0, 0] / sum(Y[0, :])
 mdotAir = mdot * (1 - fuelRatio)
 
-# Note there is an error in calculating something here
 q0   = 50e+03
 T0   = 220
 M0   = 10
@@ -302,9 +304,11 @@ A10   = mdot / (rho10*v10)
 
 thrustPerEngine = mdot * (v10 - v0) + (P10 - P0) * A10
 specificThrust  = thrustPerEngine / mdot
+specificImpulse = specificThrust/9.81
 
 craftDrag = q0 * (9.25E-03) * (62.77)  # = q * Cd * Aref
 netForce  = 4 * thrustPerEngine - craftDrag
+thrustMargin = netForce / craftDrag
 
 
 # ------------------------------ Display results ------------------------------
@@ -325,6 +329,7 @@ print(f"{'Mach Number':>25} = {M4:.2f}")
 print(f"{'Temperature':>25} = {T4:.2f} K")
 print(f"{'Pressure':>25} = {kPa(P4):.2f} kPa")
 print(f"{'Total Temperature':>25} = {Tt4:.2f} K")
+print(f"{'Fraction of fuel burned':>25} = {fuelFractionBurned:.5f}")
 # print(f"{'Total Pressure':>25} = {kPa(Pt4):.2f} kPa")
 
 print("")
@@ -343,8 +348,10 @@ print(f"{'Capture Area Ratio':>25} = {A10/A0:.2f}")
 print(f"\n{' Scramjet performance ':-^53}\n")
 print(f"{'Thrust per Engine':>25} = {thrustPerEngine:.2f} N")
 print(f"{'Specfic Thrust':>25} = {specificThrust:.2f} N.s/kg")
+print(f"{'Specific Impulse' :>25} = {specificImpulse:.2f} s")
 print(f"{'Drag':>25} = {craftDrag:.2f} N")
 print(f"{'Net force':>25} = {netForce:.2f} N")
+print(f"{'Thrust margin':>25} = {thrustMargin:.2f}")
 
 print("\n" + '-'*53)
 
@@ -455,6 +462,6 @@ axes[1, 1].set_title(f"Stagnation temperature over combustor")
 axes[1, 1].legend()
 axes[1, 1].grid()
 
-plt.savefig(f"part_2_img/subfig_{temp_label}.pdf")
+#plt.savefig(f"part_2_img/subfig_{temp_label}.pdf")
 
 plt.show()

@@ -47,7 +47,7 @@ n = 1 + 3*(1 + 3.76)
 mWeights = np.array([28, 32, 28, 18, 44])    # kg/kmol
 X3 = np.array(
     [1/n, 3/n, 0.0, 0.0, 0.0]
-) * p3b / (Ru * T3b)
+) * p3b / (Ru * T3b) #
 
 # calculate mass fraction of N2 at inlet
 X_N2 = (3 * 3.76 / n) * p3b / (Ru * T3b)

@@ -29,15 +29,12 @@
 }
 \usepackage[                           % SI Units
     per-mode=symbol,                   % e.g. \SI{8314}{\kJ\per\kg\per\K},
-    separate-uncertainty=true,         %      \num{1e6}, \ang{45}, etc...
-    multi-part-units=single
+    separate-uncertainty=true          %      \num{1e6}, \ang{45}, etc...
 ]{siunitx}
-\sisetup{separate-uncertainty}
 \usepackage[version=4]{mhchem}         % Chemical equations -> e.g. \ch{H20}
 \usepackage{bm}                        % Bold maths symbols -> e.g. \bm{\alpha}
 \usepackage{xfrac}                     % Use \sfrac{}{} for slanted fractions
 \usepackage{esint}                     % Gives nicer integration symbols
-\usepackage{cancel}                    % Gives \cancelto{val}{var}
 
 %% ------------------------------ Maths commands ------------------------------
 
@@ -148,28 +145,12 @@
 %% ============================== Code packages ===============================
 
 \usepackage{minted}
-\setminted[python]{
-    tabsize=4,
-	obeytabs,
-	fontsize=\footnotesize,
-	frame=lines,
-	framesep=0.5em,
-	linenos
-}
 \usemintedstyle{friendly}
-\usepackage{algpseudocode}
+%\usepackage{algpseudocode}
 
 %% ------------------------------ Code commands -------------------------------
 
 \renewcommand\listoflistingscaption{List of source codes}
-
-\usepackage{etoolbox, xpatch}
-
-\makeatletter
-\AtBeginEnvironment{minted}{\dontDoFColorBox}
-\def\dontDoFColorBox{\renewcommand\fcolorbox[4][]{##4}}
-\xpatchcmd{\inputminted}{\minted@fvset}{\minted@fvset\dontDoFColorBox}{}{}
-\makeatother
 
 %% ============================================================================
 
@@ -177,14 +158,10 @@
 
 %% =================== Bibliography & Referencing packages ====================
 
-\usepackage[
-    backend=biber,
-    style=authoryear,
-    citestyle=authoryear
-    % style=bwl-FU
-]{biblatex}
+\usepackage[backend=biber, style=bwl-FU]{biblatex}
 \urlstyle{same}
 \DeclareLanguageMapping{english}{english-apa}
+% \addbibresource{sample.bib}
 \setcounter{biburlucpenalty}{10000}
 
 \usepackage[english]{babel}
